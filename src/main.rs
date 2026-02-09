@@ -11,11 +11,34 @@ fn main() {
         io::stdin()
             .read_line(&mut user_input)
             .expect("Invalid input");
+
         let user_input = user_input.trim();
 
         match user_input {
             "exit" => break,
-            _ => println!("{user_input}: command not found")
+            _ => process_comman(user_input),
         };
     }
+}
+fn process_comman(command: &str) {
+    let first_space = command.find(' ');
+
+    let command_name: &str = if let Some(i) = first_space {
+        &command[0..i]
+    }
+    else {
+        &command[0..]
+    };
+
+    let command_argument: &str = if let Some(i) = first_space {
+        &command[i..]
+    }
+    else {
+        &""
+    };
+
+    match command_name {
+        "echo" => println!("{command_argument}"),
+        _ => println!("{command}: command not found")
+    };
 }
