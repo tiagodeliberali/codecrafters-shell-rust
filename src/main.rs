@@ -24,14 +24,14 @@ fn process_comman(command: &str) {
     let first_space = command.find(' ');
 
     let command_name: &str = if let Some(i) = first_space {
-        &command[0..i]
+        &command[0..i].trim()
     }
     else {
-        &command[0..]
+        &command[0..].trim()
     };
 
     let command_argument: &str = if let Some(i) = first_space {
-        &command[i..]
+        &command[i..].trim()
     }
     else {
         &""
