@@ -13,6 +13,9 @@ fn main() {
             .expect("Invalid input");
         let user_input = user_input.trim();
 
-        println!("{user_input}: command not found");
+        match user_input {
+            "exit" => break,
+            _ => println!("{user_input}: command not found")
+        };
     }
 }
