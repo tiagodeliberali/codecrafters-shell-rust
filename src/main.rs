@@ -1,7 +1,13 @@
+use std::collections::{HashMap, HashSet};
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
 fn main() {
+    let mut commands: HashMap<&str, fn(&Vec<&str>) -> ()> = HashMap::new();
+    commands.insert("echo", echo);
+    commands.insert("exit", exit);
+    commands.insert("type", type_fn);
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -12,21 +18,41 @@ fn main() {
             .read_line(&mut user_input)
             .expect("Invalid input");
 
-        let user_input = user_input.trim();
+        let command = user_input.trim();
+        let words: Vec<&str> = command.split(' ').collect();
 
-        match user_input {
-            "exit" => break,
-            _ => process_comman(user_input),
-        };
+        if let Some(&command_name) = words.first() {
+            let action_requested = commands.get(&command_name);
+
+            if let Some(action) = action_requested {
+                action(&words);
+            } else {
+                println!("{command}: command not found")
+            }
+        }
     }
 }
-fn process_comman(command: &str) {
-    let words: Vec<&str> = command.split(' ').collect();
 
-    if let Some(&command_name) = words.first() {
-        match command_name {
-            "echo" => println!("{}", words[1..].join(" ")),
-            _ => println!("{command}: command not found"),
-        };
+fn exit(_: &Vec<&str>) {
+    std::process::exit(0);
+}
+
+fn echo(words: &Vec<&str>) {
+    println!("{}", words[1..].join(" "));
+}
+
+fn type_fn(words: &Vec<&str>) {
+    let keywords: HashSet<&str> = HashSet::from(["echo", "exit", "type"]);
+
+    if let Some(name) = words.get(1) {
+        if keywords.contains(name) {
+            println!("{name} is a shell builtin");
+        }
+        else {
+            println!("{name}: not found")
+        }
+    }
+    else {
+        println!(": not found")
     }
 }
