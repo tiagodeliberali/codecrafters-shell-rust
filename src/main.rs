@@ -21,24 +21,12 @@ fn main() {
     }
 }
 fn process_comman(command: &str) {
-    let first_space = command.find(' ');
+    let words: Vec<&str> = command.split(' ').collect();
 
-    let command_name: &str = if let Some(i) = first_space {
-        &command[0..i].trim()
+    if let Some(&command_name) = words.first() {
+        match command_name {
+            "echo" => println!("{}", words[1..].join(" ")),
+            _ => println!("{command}: command not found"),
+        };
     }
-    else {
-        &command[0..].trim()
-    };
-
-    let command_argument: &str = if let Some(i) = first_space {
-        &command[i..].trim()
-    }
-    else {
-        &""
-    };
-
-    match command_name {
-        "echo" => println!("{command_argument}"),
-        _ => println!("{command}: command not found")
-    };
 }
