@@ -1,9 +1,10 @@
 use is_executable::IsExecutable;
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
 use std::fs;
-#[allow(unused_imports)]
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
     let mut commands: HashMap<&str, fn(&Vec<&str>) -> ()> = HashMap::new();
@@ -30,7 +31,7 @@ fn main() {
             if let Some(action) = action_requested {
                 action(&words);
             } else {
-                println!("{command}: command not found")
+                run_program(&words);
             }
         }
     }
@@ -47,34 +48,68 @@ fn echo(words: &Vec<&str>) {
 fn type_fn(words: &Vec<&str>) {
     let keywords: HashSet<&str> = HashSet::from(["echo", "exit", "type"]);
 
-    if let Some(name) = words.get(1) {
-        if keywords.contains(name) {
-            println!("{name} is a shell builtin");
-        } else {
-            let system_path = std::env::var_os("PATH");
+    let Some(name) = words.get(1) else {
+        println!(": not found");
+        return;
+    };
 
-            if let Some(path) = system_path {
-                let path_list: Vec<PathBuf> = std::env::split_paths(&path).collect();
-
-                for path_item in &path_list {
-                    let read_dir_result = fs::read_dir(path_item);
-
-                    if let Ok(read_dir_value) = read_dir_result {
-                        for entry in read_dir_value {
-                            if let Ok(entry_result) = entry {
-                                let file_path = entry_result.path();
-                                if file_path.ends_with(name) && file_path.is_executable() {
-                                    println!("{name} is {}", &file_path.to_str().unwrap_or_default());
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            println!("{name}: not found")
-        }
+    if keywords.contains(name) {
+        println!("{name} is a shell builtin");
     } else {
-        println!(": not found")
+        match find_executable(name) {
+            Some(path) => println!("{name} is {path}"),
+            None => println!("{name}: not found"),
+        };
     }
+}
+
+fn run_program(words: &Vec<&str>) {
+    let Some(name) = words.first() else {
+        println!(": not found");
+        return;
+    };
+
+    let Some(path) = find_executable(name) else {
+        println!("{name}: not found");
+        return;
+    };
+
+    let output = Command::new(path)
+        .args(words[1..].iter().map(|x| OsStr::new(x)))
+        .output()
+        .expect("failed to execute process");
+
+    let Ok(message) = str::from_utf8(&output.stdout) else {
+        return;
+    };
+
+    println!("{message}");
+}
+
+fn find_executable(name: &str) -> Option<String> {
+    let Some(path) = std::env::var_os("PATH") else {
+        return None;
+    };
+
+    let path_list: Vec<PathBuf> = std::env::split_paths(&path).collect();
+
+    for path_item in &path_list {
+        let Ok(read_dir_value) = fs::read_dir(path_item) else {
+            return None;
+        };
+
+        for entry in read_dir_value {
+            let Ok(entry_result) = entry else {
+                return None;
+            };
+
+            let file_path = entry_result.path();
+
+            if file_path.ends_with(name) && file_path.is_executable() {
+                return Some(String::from(file_path.to_str().unwrap_or_default()));
+            }
+        }
+    }
+
+    return None;
 }
