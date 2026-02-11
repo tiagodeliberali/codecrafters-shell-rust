@@ -83,7 +83,7 @@ fn run_program(words: &Vec<&str>) {
         return;
     };
 
-    println!("{message}");
+    print!("{message}");
 }
 
 fn find_executable(name: &str) -> Option<String> {
