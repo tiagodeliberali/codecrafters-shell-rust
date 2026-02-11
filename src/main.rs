@@ -74,7 +74,7 @@ fn run_program(words: &Vec<&str>) {
         return;
     };
 
-    let output = Command::new(path)
+    let output = Command::new(name)
         .args(words[1..].iter().map(|x| OsStr::new(x)))
         .output()
         .expect("failed to execute process");
