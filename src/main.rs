@@ -64,7 +64,7 @@ fn type_fn(words: &Vec<&str>) {
                             if let Ok(entry_result) = entry {
                                 let file_path = entry_result.path();
                                 if file_path.ends_with(name) && file_path.is_executable() {
-                                    println!("{name} is {:?}", &file_path);
+                                    println!("{name} is {}", &file_path.to_str().unwrap_or_default());
                                     return;
                                 }
                             }
