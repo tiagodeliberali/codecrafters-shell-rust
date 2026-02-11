@@ -57,16 +57,22 @@ fn type_fn(words: &Vec<&str>) {
                 let path_list: Vec<PathBuf> = std::env::split_paths(&path).collect();
 
                 for path_item in &path_list {
-                    for entry in fs::read_dir(path_item).expect("error") {
-                        let entry = entry.expect("error");
-                        let file_path = entry.path();
-                        if file_path.ends_with(name) && file_path.is_executable() {
-                            println!("{name} is {}", &entry.path().to_str().expect("value"));
-                            return;
+                    let read_dir_result = fs::read_dir(path_item);
+
+                    if let Ok(read_dir_value) = read_dir_result {
+                        for entry in read_dir_value {
+                            if let Ok(entry_result) = entry {
+                                let file_path = entry_result.path();
+                                if file_path.ends_with(name) && file_path.is_executable() {
+                                    println!("{name} is {:?}", &file_path);
+                                    return;
+                                }
+                            }
                         }
                     }
                 }
             }
+            println!("{name}: not found")
         }
     } else {
         println!(": not found")
