@@ -5,11 +5,13 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
+use std::env;
 
 fn main() {
     let mut commands: HashMap<&str, fn(&Vec<&str>) -> ()> = HashMap::new();
     commands.insert("echo", echo);
     commands.insert("exit", exit);
+    commands.insert("pwd", pwd);
     commands.insert("type", type_fn);
 
     loop {
@@ -41,12 +43,20 @@ fn exit(_: &Vec<&str>) {
     std::process::exit(0);
 }
 
+fn pwd(_: &Vec<&str>) {
+    let Ok(cur_dir) = env::current_dir() else {
+        return;
+    };
+
+    println!("{}", cur_dir.display());
+}
+
 fn echo(words: &Vec<&str>) {
     println!("{}", words[1..].join(" "));
 }
 
 fn type_fn(words: &Vec<&str>) {
-    let keywords: HashSet<&str> = HashSet::from(["echo", "exit", "type"]);
+    let keywords: HashSet<&str> = HashSet::from(["echo", "exit", "type", "pwd"]);
 
     let Some(name) = words.get(1) else {
         println!(": not found");
