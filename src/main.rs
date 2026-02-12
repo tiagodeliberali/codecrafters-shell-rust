@@ -4,7 +4,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
@@ -147,16 +147,32 @@ fn cd(words: &Vec<&str>, current_dir: &mut PathBuf) {
         return;
     };
 
-    let path_exists = match fs::exists(path) {
+    let mut target_dir = current_dir.clone();
+    let Ok(pathbuf_dir) = PathBuf::from_str(*path);
+
+    for path_component in pathbuf_dir.components() {
+        match path_component {
+            Component::RootDir | Component::Prefix(_) => {
+                let Ok(value) = PathBuf::from_str(*path);
+                target_dir = value;
+                break;
+            },
+            Component::ParentDir => {
+                target_dir.pop();
+            },
+            Component::Normal(value) => target_dir.push(value),
+            Component::CurDir => continue,
+        }
+    }
+
+    let path_exists = match fs::exists(&target_dir) {
         Ok(value) => value,
-        _ => false
+        _ => false,
     };
 
     if path_exists {
-        let Ok(pathbuf_dir) = PathBuf::from_str(*path);
-        *current_dir = pathbuf_dir.clone();
-    }
-    else {
+        *current_dir = target_dir.clone();
+    } else {
         println!("cd: {path}: No such file or directory")
     }
 }
