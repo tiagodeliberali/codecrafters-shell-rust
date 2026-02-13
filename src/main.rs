@@ -147,6 +147,11 @@ fn cd(words: &Vec<&str>, current_dir: &mut PathBuf) {
         return;
     };
 
+    let Some(home_dir) = env::home_dir() else {
+        println!("HOME directory is not available");
+        return;
+    };
+
     let mut target_dir = current_dir.clone();
     let Ok(pathbuf_dir) = PathBuf::from_str(*path);
 
@@ -156,11 +161,17 @@ fn cd(words: &Vec<&str>, current_dir: &mut PathBuf) {
                 let Ok(value) = PathBuf::from_str(*path);
                 target_dir = value;
                 break;
-            },
+            }
             Component::ParentDir => {
                 target_dir.pop();
-            },
-            Component::Normal(value) => target_dir.push(value),
+            }
+            Component::Normal(value) => {
+                if value.eq("~") {
+                    target_dir = home_dir.clone();
+                } else {
+                    target_dir.push(value);
+                }
+            }
             Component::CurDir => continue,
         }
     }
