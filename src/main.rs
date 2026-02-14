@@ -9,7 +9,7 @@ use std::process::Command;
 
 struct CommandInput<'a> {
     command_name: &'a str,
-    command_arguments: Vec<String>,
+    command_arguments: &'a [String],
     current_dir: &'a Path,
 }
 
@@ -76,7 +76,7 @@ fn main() {
 
             let input = CommandInput {
                 command_name: &command_name.as_str(),
-                command_arguments: parse_input(&words[1..].join(" ")),
+                command_arguments: &words[1..],
                 current_dir: &current_dir,
             };
 
