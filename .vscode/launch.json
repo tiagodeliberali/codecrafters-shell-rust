@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug codecrafters-shell",
+            "cargo": {
+                "args": ["build", "--bin=codecrafters-shell", "--package=codecrafters-shell"],
+                "filter": {
+                    "name": "codecrafters-shell",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests",
+            "cargo": {
+                "args": ["test", "--no-run", "--bin=codecrafters-shell", "--package=codecrafters-shell"],
+                "filter": {
+                    "name": "codecrafters-shell",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
