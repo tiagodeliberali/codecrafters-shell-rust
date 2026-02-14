@@ -69,14 +69,14 @@ fn main() {
             .expect("Invalid input");
 
         let command = user_input.trim();
-        let words: Vec<&str> = command.split(' ').collect();
+        let words = parse_input(command);
 
-        if let Some(&command_name) = words.first() {
-            let action_requested = commands.get(&command_name);
+        if let Some(command_name) = words.first() {
+            let action_requested = commands.get(&command_name.as_str());
 
             let input = CommandInput {
-                command_name,
-                command_arguments: parse_arguments(&words[1..].join(" ")),
+                command_name: &command_name.as_str(),
+                command_arguments: parse_input(&words[1..].join(" ")),
                 current_dir: &current_dir,
             };
 
@@ -110,7 +110,7 @@ enum Parser {
     None
 }
 
-fn parse_arguments(argument: &str) -> Vec<String> {
+fn parse_input(argument: &str) -> Vec<String> {
     let mut arguments: Vec<String> = Vec::new();
     let mut current_argument = String::new();
 
