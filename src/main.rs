@@ -1,65 +1,54 @@
 use is_executable::IsExecutable;
-use std::collections::{HashMap, HashSet};
+use owo_colors::OwoColorize;
+use std::collections::HashMap;
 use std::env;
-use std::ffi::OsStr;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
-use std::str::FromStr;
-use owo_colors::OwoColorize;
 
 struct CommandInput<'a> {
     command_name: &'a str,
     command_arguments: &'a [&'a str],
-    current_dir: &'a Path
+    current_dir: &'a Path,
 }
 
+#[derive(Default)]
 struct CommandOutput {
     updated_dir: Option<PathBuf>,
     std_output: Option<String>,
-    std_error: Option<String>
+    std_error: Option<String>,
 }
 
 impl CommandOutput {
-    fn success(msg: String) -> CommandOutput {
-        CommandOutput { 
-            updated_dir: None, 
-            std_output: Some(msg), 
-            std_error: None }
-    }
-
-    fn failure(msg: String) -> CommandOutput {
-        CommandOutput { 
-            updated_dir: None, 
-            std_output: None, 
-            std_error: Some(msg), 
+    fn success(msg: String) -> Self {
+        Self {
+            std_output: Some(msg),
+            ..Default::default()
         }
     }
 
-    fn empty() -> CommandOutput {
-        CommandOutput { 
-            updated_dir:None, 
-            std_output: None, 
-            std_error: None 
+    fn failure(msg: String) -> Self {
+        Self {
+            std_error: Some(msg),
+            ..Default::default()
         }
     }
 
-    fn path_update(path: PathBuf) -> CommandOutput {
-        CommandOutput {
+    fn empty() -> Self {
+        Default::default()
+    }
+
+    fn path_update(path: PathBuf) -> Self {
+        Self {
             updated_dir: Some(path),
-            std_output: None,
-            std_error: None
+            ..Default::default()
         }
     }
 }
 
 fn main() {
-    let mut current_dir: PathBuf = PathBuf::new();
-
-    if let Ok(cur_dir) = env::current_dir() {
-        current_dir = cur_dir;
-    };
+    let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
 
     let mut commands: HashMap<&str, fn(CommandInput) -> CommandOutput> = HashMap::new();
     commands.insert("echo", echo);
@@ -88,7 +77,7 @@ fn main() {
             let input = CommandInput {
                 command_name,
                 command_arguments: &words[1..],
-                current_dir: &current_dir
+                current_dir: &current_dir,
             };
 
             let result = if let Some(action) = action_requested {
@@ -118,37 +107,35 @@ fn exit(_: CommandInput) -> CommandOutput {
 }
 
 fn pwd(input: CommandInput) -> CommandOutput {
-    CommandOutput::success(format!("{}", &input.current_dir.display()))
+    CommandOutput::success(input.current_dir.display().to_string())
 }
 
 fn echo(input: CommandInput) -> CommandOutput {
-    CommandOutput::success(format!("{}", input.command_arguments.join(" ")))
+    CommandOutput::success(input.command_arguments.join(" "))
 }
 
 fn type_fn(input: CommandInput) -> CommandOutput {
-    let keywords: HashSet<&str> = HashSet::from(["echo", "exit", "type", "pwd", "cd", "ls"]);
-
     let Some(name) = input.command_arguments.first() else {
-        return CommandOutput::failure(format!(": not found"));
+        return CommandOutput::failure(": not found".to_string());
     };
 
-    return if keywords.contains(name) {
+    if matches!(*name, "echo" | "exit" | "type" | "pwd" | "cd" | "ls") {
         CommandOutput::success(format!("{name} is a shell builtin"))
     } else {
-        match find_executable(&input) {
-            Some(path) => CommandOutput::success(format!("{name} is {path}")),
+        match find_executable(name, input.current_dir) {
+            Some(path) => CommandOutput::success(format!("{name} is {}", path.display())),
             None => CommandOutput::failure(format!("{name}: not found")),
         }
     }
 }
 
 fn run_program(input: CommandInput) -> CommandOutput {
-    let Some(_) = find_executable(&input) else {
+    if find_executable(input.command_name, input.current_dir).is_none() {
         return CommandOutput::failure(format!("{}: not found", input.command_name));
     };
 
     let output = Command::new(input.command_name)
-        .args(input.command_arguments.iter().map(|x| OsStr::new(x)))
+        .args(input.command_arguments)
         .current_dir(input.current_dir)
         .output()
         .expect("failed to execute process");
@@ -157,49 +144,39 @@ fn run_program(input: CommandInput) -> CommandOutput {
         return CommandOutput::empty();
     };
 
-    CommandOutput::success(format!("{message}"))
+    CommandOutput::success(message.trim().to_string())
 }
 
-fn find_executable(input: &CommandInput) -> Option<String> {
+fn find_executable(name: &str, current_dir: &Path) -> Option<PathBuf> {
     // search current folder
-    if let Some(value) = find_executable_folder(input.command_name, input.current_dir) {
+    if let Some(value) = find_executable_folder(name, current_dir) {
         return Some(value);
     }
 
     // search path
-    let Some(path) = std::env::var_os("PATH") else {
-        return None;
-    };
+    let path = std::env::var_os("PATH")?;
 
-    let path_list: Vec<PathBuf> = std::env::split_paths(&path).collect();
-
-    for path_item in &path_list {
-        if let Some(value) = find_executable_folder(input.command_name, path_item) {
-            return Some(value);
-        }
-    }
-
-    return None;
+    env::split_paths(&path).find_map(|path_item| find_executable_folder(name, &path_item))
 }
 
-fn find_executable_folder(name: &str, path_item: &Path) -> Option<String> {
+fn find_executable_folder(name: &str, path_item: &Path) -> Option<PathBuf> {
     let Ok(read_dir_value) = fs::read_dir(path_item) else {
         return None;
     };
 
     for entry in read_dir_value {
         let Ok(entry_result) = entry else {
-            return None;
+            continue;
         };
 
         let file_path = entry_result.path();
 
         if file_path.ends_with(name) && file_path.is_executable() {
-            return Some(String::from(file_path.to_str().unwrap_or_default()));
+            return Some(file_path);
         }
     }
 
-    return None;
+    None
 }
 
 fn cd(input: CommandInput) -> CommandOutput {
@@ -207,40 +184,35 @@ fn cd(input: CommandInput) -> CommandOutput {
         return CommandOutput::empty();
     };
 
-    let Some(home_dir) = env::home_dir() else {
-        return CommandOutput::failure(format!("HOME directory is not available"));
-    };
+    let path = if path.starts_with("~") {
+        let Some(home_dir) = env::var("HOME").ok().map(PathBuf::from) else {
+            return CommandOutput::failure("HOME directory is not available".to_string());
+        };
+        path.replacen("~", &home_dir.display().to_string(), 1)
+    } else {
+        path.to_string()
+    };    
 
     let mut target_dir = PathBuf::from(input.current_dir);
-    let Ok(pathbuf_dir) = PathBuf::from_str(*path);
+    let pathbuf_dir = PathBuf::from(&path);
 
     for path_component in pathbuf_dir.components() {
         match path_component {
             Component::RootDir | Component::Prefix(_) => {
-                let Ok(value) = PathBuf::from_str(*path);
-                target_dir = value;
+                target_dir = PathBuf::from(&path);
                 break;
             }
             Component::ParentDir => {
                 target_dir.pop();
             }
             Component::Normal(value) => {
-                if value.eq("~") {
-                    target_dir = home_dir.clone();
-                } else {
-                    target_dir.push(value);
-                }
+                target_dir.push(value);
             }
             Component::CurDir => continue,
         }
     }
 
-    let path_exists = match fs::exists(&target_dir) {
-        Ok(value) => value,
-        _ => false,
-    };
-
-    return if path_exists {
+    if target_dir.exists() {
         CommandOutput::path_update(target_dir)
     } else {
         CommandOutput::failure(format!("cd: {path}: No such file or directory"))
@@ -267,13 +239,11 @@ fn ls(input: CommandInput) -> CommandOutput {
         };
 
         if file_path.is_dir() {
-            folders.push(format!("{}", format!("[{}]", file_name.display()).yellow()));
-        }
-        else if file_path.is_executable() {
-            executables.push(format!("{}", format!("*{}", file_name.display()).green()));
-        }
-        else {
-            others.push(format!("{}", file_name.display()));
+            folders.push(format!("[{}]", file_name.display()).yellow().to_string());
+        } else if file_path.is_executable() {
+            executables.push(format!("*{}", file_name.display()).green().to_string());
+        } else {
+            others.push(file_name.display().to_string());
         }
     }
 
@@ -286,5 +256,3 @@ fn ls(input: CommandInput) -> CommandOutput {
 
     CommandOutput::success(folders.join("\n"))
 }
-
-
