@@ -102,33 +102,55 @@ fn main() {
     }
 }
 
+enum Parser {
+    SingleQuote,
+    DoubleQuote,
+    Escape,
+    None
+}
+
 fn parse_arguments(argument: &str) -> Vec<String> {
     let mut arguments: Vec<String> = Vec::new();
-    let mut double_quote_area = false;
-    let mut single_quote_area = false;
     let mut current_argument = String::new();
 
+    let mut current_parser = Parser::None;
+
     for character in argument.chars() {
-        // double quote
-        if character == '"' {
-            double_quote_area = !double_quote_area;
-        } else if double_quote_area {
-            current_argument.push(character);
-        }
-        // single quote
-        else if character == '\'' {
-            single_quote_area = !single_quote_area;
-        } else if single_quote_area {
-            current_argument.push(character);
-        }
-        // outside quote areas
-        else if character == ' ' {
-            if current_argument.len() > 0 {
-                arguments.push(current_argument.clone());
-                current_argument.clear();
+        match current_parser {
+            Parser::None => {
+                if character == '\'' {
+                    current_parser = Parser::SingleQuote;
+                } else if character == '"' {
+                    current_parser = Parser::DoubleQuote;
+                } else if character == '\\' {
+                    current_parser = Parser::Escape;
+                } else if character == ' ' {
+                    if current_argument.len() > 0 {
+                        arguments.push(current_argument.clone());
+                        current_argument.clear();
+                    }
+                } else {
+                    current_argument.push(character);
+                }
+            },
+            Parser::DoubleQuote => {
+                if character == '"' {
+                    current_parser = Parser::None;
+                } else {
+                    current_argument.push(character);
+                }
+            },
+            Parser::SingleQuote => {
+                if character == '\'' {
+                    current_parser = Parser::None;
+                } else {
+                    current_argument.push(character);
+                }
+            },
+            Parser::Escape => {
+                current_argument.push(character);
+                current_parser = Parser::None;
             }
-        } else {
-            current_argument.push(character);
         }
     }
 
