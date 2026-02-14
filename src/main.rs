@@ -106,6 +106,7 @@ enum Parser {
     SingleQuote,
     DoubleQuote,
     Escape,
+    EscapeInDoubleQuote,
     None
 }
 
@@ -136,6 +137,8 @@ fn parse_arguments(argument: &str) -> Vec<String> {
             Parser::DoubleQuote => {
                 if character == '"' {
                     current_parser = Parser::None;
+                } else if character == '\\' {
+                    current_parser = Parser::EscapeInDoubleQuote;
                 } else {
                     current_argument.push(character);
                 }
@@ -150,6 +153,16 @@ fn parse_arguments(argument: &str) -> Vec<String> {
             Parser::Escape => {
                 current_argument.push(character);
                 current_parser = Parser::None;
+            },
+            Parser::EscapeInDoubleQuote => {
+                if matches!(character, '"' | '\\') {
+                    current_argument.push(character);
+                } else {
+                    current_argument.push('\\');
+                    current_argument.push(character);
+                }
+
+                current_parser = Parser::DoubleQuote;
             }
         }
     }
