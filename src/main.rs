@@ -9,7 +9,7 @@ use std::process::Command;
 
 struct CommandInput<'a> {
     command_name: &'a str,
-    command_arguments: &'a [&'a str],
+    command_arguments: Vec<String>,
     current_dir: &'a Path,
 }
 
@@ -76,7 +76,7 @@ fn main() {
 
             let input = CommandInput {
                 command_name,
-                command_arguments: &words[1..],
+                command_arguments: parse_arguments(&words[1..].join(" ")),
                 current_dir: &current_dir,
             };
 
@@ -102,6 +102,31 @@ fn main() {
     }
 }
 
+fn parse_arguments(argument: &str) -> Vec<String> {
+    let mut arguments: Vec<String> = Vec::new();
+    let mut single_quote_area = false;
+    let mut current_argument = String::new();
+
+    for character in argument.chars() {
+        if character == '\'' {
+            single_quote_area = !single_quote_area;
+        } else if character == ' ' && !single_quote_area {
+            if current_argument.len() > 0 {
+                arguments.push(current_argument.clone());
+                current_argument.clear();
+            }
+        } else {
+            current_argument.push(character);
+        }
+    }
+
+    if current_argument.len() > 0 {
+        arguments.push(current_argument);
+    }
+
+    arguments
+}
+
 fn exit(_: CommandInput) -> CommandOutput {
     std::process::exit(0);
 }
@@ -119,7 +144,10 @@ fn type_fn(input: CommandInput) -> CommandOutput {
         return CommandOutput::failure(": not found".to_string());
     };
 
-    if matches!(*name, "echo" | "exit" | "type" | "pwd" | "cd" | "ls") {
+    if matches!(
+        name.as_str(),
+        "echo" | "exit" | "type" | "pwd" | "cd" | "ls"
+    ) {
         CommandOutput::success(format!("{name} is a shell builtin"))
     } else {
         match find_executable(name, input.current_dir) {
@@ -191,7 +219,7 @@ fn cd(input: CommandInput) -> CommandOutput {
         path.replacen("~", &home_dir.display().to_string(), 1)
     } else {
         path.to_string()
-    };    
+    };
 
     let mut target_dir = PathBuf::from(input.current_dir);
     let pathbuf_dir = PathBuf::from(&path);
