@@ -104,13 +104,25 @@ fn main() {
 
 fn parse_arguments(argument: &str) -> Vec<String> {
     let mut arguments: Vec<String> = Vec::new();
+    let mut double_quote_area = false;
     let mut single_quote_area = false;
     let mut current_argument = String::new();
 
     for character in argument.chars() {
-        if character == '\'' {
+        // double quote
+        if character == '"' {
+            double_quote_area = !double_quote_area;
+        } else if double_quote_area {
+            current_argument.push(character);
+        }
+        // single quote
+        else if character == '\'' {
             single_quote_area = !single_quote_area;
-        } else if character == ' ' && !single_quote_area {
+        } else if single_quote_area {
+            current_argument.push(character);
+        }
+        // outside quote areas
+        else if character == ' ' {
             if current_argument.len() > 0 {
                 arguments.push(current_argument.clone());
                 current_argument.clear();
