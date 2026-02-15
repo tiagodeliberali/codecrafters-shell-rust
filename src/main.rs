@@ -99,11 +99,9 @@ fn main() {
                     }
                 }
                 OutputProcessor::StdoutToFile(ref output_path) => {
-                    if let Some(msg) = result.std_output {
-                        if let Err(error) = fs::write(output_path, msg) {
+                    if let Err(error) = fs::write(output_path, result.std_output.unwrap_or_default()) {
                             println!("Failed to write output file: {error}");
                         }
-                    }
 
                     if let Some(msg) = result.std_error {
                         println!("{}", msg);
@@ -114,11 +112,9 @@ fn main() {
                         println!("{msg}");
                     }
 
-                    if let Some(msg) = result.std_error {
-                        if let Err(error) = fs::write(output_path, msg) {
+                    if let Err(error) = fs::write(output_path, result.std_error.unwrap_or_default()) {
                             println!("Failed to write output file: {error}");
                         }
-                    }
                 }
             }
         }
