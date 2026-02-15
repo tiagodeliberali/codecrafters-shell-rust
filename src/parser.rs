@@ -1,3 +1,8 @@
+use std::{
+    env,
+    path::{Component, Path, PathBuf},
+};
+
 enum Parser {
     SingleQuote,
     DoubleQuote,
@@ -23,6 +28,10 @@ pub fn parse_input(argument: &str) -> Vec<String> {
                     current_parser = Parser::Escape;
                 } else if character == ' ' {
                     if !current_argument.is_empty() {
+                        if matches!(current_argument.as_str(), ">" | "1>") {
+                            current_argument.clear();
+                            break; // redirect stout argument
+                        }
                         arguments.push(current_argument.clone());
                         current_argument.clear();
                     }
@@ -68,4 +77,36 @@ pub fn parse_input(argument: &str) -> Vec<String> {
     }
 
     arguments
+}
+
+pub fn parse_path(path: &str, current_dir: &Path) -> Result<PathBuf, String> {
+    let path = if path.starts_with("~") {
+        let Some(home_dir) = env::var("HOME").ok().map(PathBuf::from) else {
+            return Err(String::from("HOME directory not defined."));
+        };
+        path.replacen("~", &home_dir.display().to_string(), 1)
+    } else {
+        path.to_string()
+    };
+
+    let mut target_dir = PathBuf::from(current_dir);
+    let pathbuf_dir = PathBuf::from(&path);
+
+    for path_component in pathbuf_dir.components() {
+        match path_component {
+            Component::RootDir | Component::Prefix(_) => {
+                target_dir = PathBuf::from(&path);
+                break;
+            }
+            Component::ParentDir => {
+                target_dir.pop();
+            }
+            Component::Normal(value) => {
+                target_dir.push(value);
+            }
+            Component::CurDir => continue,
+        }
+    }
+
+    Ok(target_dir)
 }

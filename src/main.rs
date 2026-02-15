@@ -4,13 +4,19 @@ mod shell;
 
 use owo_colors::OwoColorize;
 use std::collections::HashMap;
-use std::env;
 use std::io::{self, Write};
 use std::path::PathBuf;
+use std::{env, fs};
 
 use crate::shell::{CommandInput, CommandOutput};
 
+enum OutputProcessor {
+    Console,
+    File(PathBuf),
+}
+
 fn main() {
+    let mut output_processor;
     let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
 
     let mut commands: HashMap<&str, fn(CommandInput) -> CommandOutput> = HashMap::new();
@@ -32,8 +38,23 @@ fn main() {
             .expect("Invalid input");
 
         let command = user_input.trim();
-
         let words = parser::parse_input(command);
+
+        // redirect operation
+        let find_position = command.find('>');
+        if let Some(position) = find_position {
+            match parser::parse_path(&command[position+1..].trim(), &current_dir) {
+                Ok(path) => {
+                    output_processor = OutputProcessor::File(path);
+                }
+                Err(message) => {
+                    println!("Invalid redirect output operation: {message}");
+                    continue;
+                }
+            }
+        } else {
+            output_processor = OutputProcessor::Console;
+        }
 
         if let Some(command_name) = words.first() {
             let action_requested = commands.get(&command_name.as_str());
@@ -51,16 +72,31 @@ fn main() {
             };
 
             // process results
-            if let Some(msg) = result.std_output {
-                println!("{msg}");
-            }
-
-            if let Some(msg) = result.std_error {
-                println!("{}", msg.red());
-            }
-
             if let Some(path) = result.updated_dir {
                 current_dir = path;
+            }
+
+            match output_processor {
+                OutputProcessor::Console => {
+                    if let Some(msg) = result.std_output {
+                        println!("{msg}");
+                    }
+
+                    if let Some(msg) = result.std_error {
+                        println!("{}", msg.red());
+                    }
+                }
+                OutputProcessor::File(ref output_path) => {
+                    if let Some(msg) = result.std_output {
+                        if let Err(error) = fs::write(output_path, msg) {
+                            println!("Failed to write output file: {error}");
+                        }
+                    }
+
+                    if let Some(msg) = result.std_error {
+                        println!("{}", msg.red());
+                    }
+                }
             }
         }
     }
