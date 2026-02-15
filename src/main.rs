@@ -2,8 +2,9 @@ mod commands;
 mod parser;
 mod shell;
 
-use owo_colors::OwoColorize;
+// use owo_colors::OwoColorize;
 use std::collections::HashMap;
+use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::{env, fs};
@@ -12,8 +13,8 @@ use crate::shell::{CommandInput, CommandOutput};
 
 enum OutputProcessor {
     Console,
-    StdoutToFile(PathBuf),
-    StderrToFile(PathBuf),
+    StdoutToFile(PathBuf, bool),
+    StderrToFile(PathBuf, bool),
 }
 
 fn main() {
@@ -44,19 +45,37 @@ fn main() {
         // redirect operation
         let find_position = command.find('>');
         if let Some(position) = find_position {
-            match parser::parse_path(&command[position + 1..].trim(), &current_dir) {
+            // chgeck byte after the '>' position to see if it is an append operation, with another '>'
+            let append_operation = if let Some(&byte_value) = position
+                .checked_add(1)
+                .and_then(|i| command.as_bytes().get(i))
+            {
+                byte_value == b'>'
+            } else {
+                false
+            };
+
+            let inital_argument_position = if append_operation {
+                position + 2
+            } else {
+                position + 1
+            };
+
+            match parser::parse_path(&command[inital_argument_position..].trim(), &current_dir) {
                 Ok(path) => {
                     if let Some(&byte_value) = position
                         .checked_sub(1)
                         .and_then(|i| command.as_bytes().get(i))
                     {
                         if byte_value == b'2' {
-                            output_processor = OutputProcessor::StderrToFile(path);
+                            output_processor =
+                                OutputProcessor::StderrToFile(path, append_operation);
                         } else {
-                            output_processor = OutputProcessor::StdoutToFile(path);
+                            output_processor =
+                                OutputProcessor::StdoutToFile(path, append_operation);
                         }
                     } else {
-                        output_processor = OutputProcessor::StdoutToFile(path);
+                        output_processor = OutputProcessor::StdoutToFile(path, append_operation);
                     }
                 }
                 Err(message) => {
@@ -98,25 +117,47 @@ fn main() {
                         println!("{}", msg);
                     }
                 }
-                OutputProcessor::StdoutToFile(ref output_path) => {
-                    if let Err(error) = fs::write(output_path, result.std_output.unwrap_or_default()) {
-                            println!("Failed to write output file: {error}");
-                        }
+                OutputProcessor::StdoutToFile(ref output_path, append) => {
+                    write_output_to_file(output_path, result.std_output, append);
 
                     if let Some(msg) = result.std_error {
                         println!("{}", msg);
                     }
                 }
-                OutputProcessor::StderrToFile(ref output_path) => {
+                OutputProcessor::StderrToFile(ref output_path, append) => {
                     if let Some(msg) = result.std_output {
                         println!("{msg}");
                     }
 
-                    if let Err(error) = fs::write(output_path, result.std_error.unwrap_or_default()) {
-                            println!("Failed to write output file: {error}");
-                        }
+                    write_output_to_file(output_path, result.std_error, append);
                 }
             }
         }
+    }
+}
+
+fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: bool) {
+    let result = if append {
+        match OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(output_path)
+        {
+            Ok(file) => {
+                let content = content.unwrap_or_default();
+                if file.metadata().map(|m| m.len() > 0).unwrap_or(false) {
+                    writeln!(&file, "{}", content)
+                } else {
+                    writeln!(&file, "\n{}", content)
+                }
+            },
+            Err(error) => Err(error),
+        }
+    } else {
+        fs::write(output_path, content.unwrap_or_default())
+    };
+
+    if let Err(error) = result {
+        println!("Failed to write output file: {error}");
     }
 }

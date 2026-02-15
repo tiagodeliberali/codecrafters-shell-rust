@@ -28,7 +28,7 @@ pub fn parse_input(argument: &str) -> Vec<String> {
                     current_parser = Parser::Escape;
                 } else if character == ' ' {
                     if !current_argument.is_empty() {
-                        if matches!(current_argument.as_str(), ">" | "1>" | "2>") {
+                        if matches!(current_argument.as_str(), ">" | "1>" | "2>" | ">>" | "1>>" | "2>>") {
                             current_argument.clear();
                             break; // redirect stout argument
                         }
