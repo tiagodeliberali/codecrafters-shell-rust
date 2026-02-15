@@ -83,7 +83,9 @@ fn main() {
                     }
 
                     if let Some(msg) = result.std_error {
-                        println!("{}", msg.red());
+                        if !msg.is_empty() {
+                            println!("{}", msg);
+                        }
                     }
                 }
                 OutputProcessor::File(ref output_path) => {
