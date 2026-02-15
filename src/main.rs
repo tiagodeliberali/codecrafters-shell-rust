@@ -119,7 +119,7 @@ fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                     let found_command = found_command.first();
 
                     if let Some(command_name) = found_command {
-                        user_input = command_name.to_string();
+                        user_input = format!("{command_name} ");
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
                     }
