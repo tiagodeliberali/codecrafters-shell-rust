@@ -2,7 +2,7 @@ mod commands;
 mod parser;
 mod shell;
 
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::terminal::ClearType;
 // use owo_colors::OwoColorize;
 use crossterm::{cursor, event, execute, terminal};
@@ -86,10 +86,16 @@ fn retrieve_user_input(know_commands: &Vec<String>) -> String {
         if let Event::Key(KeyEvent {
             code,
             kind: KeyEventKind::Press,
+            modifiers,
             ..
         }) = event
         {
             match code {
+                // In raw mode, \n (0x0A) is mapped to Ctrl+J instead of Enter
+                KeyCode::Char('j') if modifiers.contains(KeyModifiers::CONTROL) => {
+                    print!("\r\n");
+                    break;
+                }
                 KeyCode::Char(c) => {
                     user_input.insert(cursor_pos, c);
                     cursor_pos += 1;
