@@ -1,3 +1,5 @@
+pub mod processor;
+
 use std::path::{Path, PathBuf};
 
 pub struct CommandInput<'a> {
