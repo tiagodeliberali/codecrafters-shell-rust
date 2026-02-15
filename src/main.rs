@@ -94,7 +94,9 @@ fn main() {
                     }
 
                     if let Some(msg) = result.std_error {
-                        println!("{}", msg);
+                        if !msg.is_empty() {
+                            println!("{}", msg);
+                        }
                     }
                 }
             }
