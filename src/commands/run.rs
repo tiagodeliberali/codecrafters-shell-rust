@@ -17,13 +17,13 @@ pub fn run_program(input: CommandInput) -> CommandOutput {
         .expect("failed to execute process");
 
     let std_out = if let Ok(message) = str::from_utf8(&output.stdout) {
-        Some(String::from(message))
+        Some(message.trim_end_matches('\n').to_string())
     } else {
         None
     };
 
     let std_err = if let Ok(message) = str::from_utf8(&output.stderr) {
-        Some(String::from(message))
+        Some(message.trim_end_matches('\n').to_string())
     } else {
         None
     };
