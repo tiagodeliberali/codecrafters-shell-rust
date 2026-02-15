@@ -146,9 +146,9 @@ fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: 
             Ok(file) => {
                 let content = content.unwrap_or_default();
                 if file.metadata().map(|m| m.len() > 0).unwrap_or(false) {
-                    writeln!(&file, "{}", content)
+                    write!(&file, "\n{}", content)
                 } else {
-                    writeln!(&file, "\n{}", content)
+                    write!(&file, "{}", content)
                 }
             },
             Err(error) => Err(error),
