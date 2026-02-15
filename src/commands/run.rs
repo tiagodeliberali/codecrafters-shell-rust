@@ -16,9 +16,21 @@ pub fn run_program(input: CommandInput) -> CommandOutput {
         .output()
         .expect("failed to execute process");
 
-    let Ok(message) = str::from_utf8(&output.stdout) else {
-        return CommandOutput::empty();
+    let std_out = if let Ok(message) = str::from_utf8(&output.stdout) {
+        Some(String::from(message))
+    } else {
+        None
     };
 
-    CommandOutput::success(message.trim().to_string())
+    let std_err = if let Ok(message) = str::from_utf8(&output.stderr) {
+        Some(String::from(message))
+    } else {
+        None
+    };
+
+    CommandOutput {
+        std_output: std_out,
+        std_error: std_err,
+        ..Default::default()
+    }
 }

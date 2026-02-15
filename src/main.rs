@@ -94,7 +94,7 @@ fn main() {
                     }
 
                     if let Some(msg) = result.std_error {
-                        println!("{}", msg.red());
+                        println!("{}", msg);
                     }
                 }
             }
