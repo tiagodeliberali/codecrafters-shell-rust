@@ -16,21 +16,24 @@ pub fn run_program(input: CommandInput) -> CommandOutput {
         .output()
         .expect("failed to execute process");
 
-    let std_out = if let Ok(message) = str::from_utf8(&output.stdout) {
-        Some(message.trim_end_matches('\n').to_string())
-    } else {
-        None
-    };
-
-    let std_err = if let Ok(message) = str::from_utf8(&output.stderr) {
-        Some(message.trim_end_matches('\n').to_string())
-    } else {
-        None
-    };
-
     CommandOutput {
-        std_output: std_out,
-        std_error: std_err,
+        std_output: parse_output_std(output.stdout),
+        std_error: parse_output_std(output.stderr),
         ..Default::default()
+    }
+}
+
+fn parse_output_std(std_out: Vec<u8>) -> Option<String> {
+    let std_out = String::from_utf8(std_out);
+    match std_out {
+        Err(_) => None,
+        Ok(value) => {
+            let output = value.trim_end_matches('\n').to_string();
+            if output.is_empty() {
+                None
+            } else {
+                Some(output)
+            }
+        }
     }
 }

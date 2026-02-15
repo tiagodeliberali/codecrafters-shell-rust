@@ -12,7 +12,8 @@ use crate::shell::{CommandInput, CommandOutput};
 
 enum OutputProcessor {
     Console,
-    File(PathBuf),
+    StdoutToFile(PathBuf),
+    StderrToFile(PathBuf),
 }
 
 fn main() {
@@ -43,9 +44,20 @@ fn main() {
         // redirect operation
         let find_position = command.find('>');
         if let Some(position) = find_position {
-            match parser::parse_path(&command[position+1..].trim(), &current_dir) {
+            match parser::parse_path(&command[position + 1..].trim(), &current_dir) {
                 Ok(path) => {
-                    output_processor = OutputProcessor::File(path);
+                    if let Some(&byte_value) = position
+                        .checked_sub(1)
+                        .and_then(|i| command.as_bytes().get(i))
+                    {
+                        if byte_value == b'2' {
+                            output_processor = OutputProcessor::StderrToFile(path);
+                        } else {
+                            output_processor = OutputProcessor::StdoutToFile(path);
+                        }
+                    } else {
+                        output_processor = OutputProcessor::StdoutToFile(path);
+                    }
                 }
                 Err(message) => {
                     println!("Invalid redirect output operation: {message}");
@@ -83,12 +95,10 @@ fn main() {
                     }
 
                     if let Some(msg) = result.std_error {
-                        if !msg.is_empty() {
-                            println!("{}", msg);
-                        }
+                        println!("{}", msg);
                     }
                 }
-                OutputProcessor::File(ref output_path) => {
+                OutputProcessor::StdoutToFile(ref output_path) => {
                     if let Some(msg) = result.std_output {
                         if let Err(error) = fs::write(output_path, msg) {
                             println!("Failed to write output file: {error}");
@@ -96,8 +106,17 @@ fn main() {
                     }
 
                     if let Some(msg) = result.std_error {
-                        if !msg.is_empty() {
-                            println!("{}", msg);
+                        println!("{}", msg);
+                    }
+                }
+                OutputProcessor::StderrToFile(ref output_path) => {
+                    if let Some(msg) = result.std_output {
+                        println!("{msg}");
+                    }
+
+                    if let Some(msg) = result.std_error {
+                        if let Err(error) = fs::write(output_path, msg) {
+                            println!("Failed to write output file: {error}");
                         }
                     }
                 }
