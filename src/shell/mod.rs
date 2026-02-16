@@ -1,4 +1,5 @@
 pub mod processor;
+pub mod input;
 
 use std::path::{Path, PathBuf};
 
