@@ -1,13 +1,16 @@
 mod commands;
+mod os;
 mod parser;
 mod shell;
-mod os;
 
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
 
-use crate::{os::OSInstance, shell::{CommandInput, CommandOutput, output}};
+use crate::{
+    os::OSInstance,
+    shell::{CommandInput, CommandOutput, output},
+};
 
 enum OutputProcessor {
     Console,
@@ -34,6 +37,7 @@ fn main() {
     for c in commands.keys() {
         know_commands.insert(c.to_string());
     }
+
     for c in os_instance.get_know_commands() {
         know_commands.insert(c);
     }
