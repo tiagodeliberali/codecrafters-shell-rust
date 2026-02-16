@@ -1,7 +1,4 @@
-use crate::{
-    commands::find_executable,
-    shell::{CommandInput, CommandOutput},
-};
+use crate::shell::{CommandInput, CommandOutput};
 
 pub fn type_fn(input: CommandInput) -> CommandOutput {
     let Some(name) = input.command_arguments.first() else {
@@ -14,7 +11,7 @@ pub fn type_fn(input: CommandInput) -> CommandOutput {
     ) {
         CommandOutput::success(format!("{name} is a shell builtin"))
     } else {
-        match find_executable(name, input.current_dir) {
+        match input.os.find_executable(name, input.current_dir) {
             Some(path) => CommandOutput::success(format!("{name} is {}", path.display())),
             None => CommandOutput::failure(format!("{name}: not found")),
         }

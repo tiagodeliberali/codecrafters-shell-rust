@@ -1,12 +1,9 @@
 use std::process::Command;
 
-use crate::{
-    commands::find_executable,
-    shell::{CommandInput, CommandOutput},
-};
+use crate::shell::{CommandInput, CommandOutput};
 
 pub fn run_program(input: CommandInput) -> CommandOutput {
-    if find_executable(input.command_name, input.current_dir).is_none() {
+    if input.os.find_executable(input.command_name, input.current_dir).is_none() {
         return CommandOutput::failure(format!("{}: not found", input.command_name));
     };
 

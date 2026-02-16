@@ -1,12 +1,13 @@
 mod commands;
 mod parser;
 mod shell;
+mod os;
 
 use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
-use crate::shell::{CommandInput, CommandOutput, processor};
+use crate::{os::OSInstance, shell::{CommandInput, CommandOutput, output}};
 
 enum OutputProcessor {
     Console,
@@ -17,6 +18,8 @@ enum OutputProcessor {
 fn main() {
     let mut output_processor;
     let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
+
+    let os_instance = OSInstance::new();
 
     let mut commands: HashMap<&str, fn(CommandInput) -> CommandOutput> = HashMap::new();
     commands.insert("echo", commands::echo);
@@ -33,7 +36,7 @@ fn main() {
         let command = user_input.trim();
         let words = parser::parse_input(command);
 
-        match processor::define_output_processor(&command, &current_dir) {
+        match output::define_output_processor(&command, &current_dir) {
             Ok(processor) => output_processor = processor,
             Err(message) => {
                 println!("{}", message);
@@ -48,6 +51,7 @@ fn main() {
                 command_name: command_name.as_str(),
                 command_arguments: &words[1..],
                 current_dir: &current_dir,
+                os: &os_instance,
             };
 
             let result = if let Some(action) = action_requested {
@@ -61,7 +65,7 @@ fn main() {
                 current_dir = path;
             }
 
-            processor::process_output(&output_processor, result.std_output, result.std_error);
+            output::process_output(&output_processor, result.std_output, result.std_error);
         }
     }
 }

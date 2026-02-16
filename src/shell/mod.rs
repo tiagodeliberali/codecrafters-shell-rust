@@ -1,12 +1,15 @@
-pub mod processor;
 pub mod input;
+pub mod output;
 
 use std::path::{Path, PathBuf};
+
+use crate::os::OSInstance;
 
 pub struct CommandInput<'a> {
     pub command_name: &'a str,
     pub command_arguments: &'a [String],
     pub current_dir: &'a Path,
+    pub os: &'a OSInstance,
 }
 
 #[derive(Default)]
