@@ -29,7 +29,8 @@ fn main() {
     commands.insert("dir", commands::ls);
     commands.insert("type", commands::type_fn);
 
-    let know_commands = commands.keys().map(|i| i.to_string()).collect();
+    let mut know_commands: Vec<String> = commands.keys().map(|i| i.to_string()).collect();
+    know_commands.append(&mut os_instance.get_know_commands());
 
     loop {
         let user_input = shell::input::retrieve_user_input(&know_commands);

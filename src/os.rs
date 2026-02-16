@@ -32,6 +32,10 @@ impl OSInstance {
             None
         }
     }
+    
+    pub(crate) fn get_know_commands(&self) -> Vec<String> {
+        self.path_commands.keys().map(|i| i.display().to_string()).collect()
+    }
 }
 
 fn load_path_commands() -> HashMap<OsString, PathBuf> {
