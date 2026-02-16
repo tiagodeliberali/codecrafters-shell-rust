@@ -1,4 +1,7 @@
-use std::{collections::HashSet, io::{self, Write}};
+use std::{
+    collections::HashSet,
+    io::{self, Write},
+};
 
 use crossterm::{
     cursor,
@@ -73,37 +76,14 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
                     } else {
-                        let mut names: Vec<&str> = found_commands.iter().map(|s| s.as_str()).collect();
+                        let mut names: Vec<&str> =
+                            found_commands.iter().map(|s| s.as_str()).collect();
                         names.sort();
 
                         if !one_tab_pressed {
                             one_tab_pressed = true;
 
-                            let mut lcp = names.first().unwrap().to_string();
-
-                            for i in 1..(names.len() - 1) {
-                                let word = names.get(i).unwrap();
-                                
-                                let len = lcp.len().min(word.len());
-
-                                if len == user_input.len() {
-                                    lcp = user_input;
-                                    break;
-                                }
-
-                                let mut last_equal = user_input.len();
-                                
-                                for j in user_input.len()..len {
-                                    if lcp.chars().nth(j) == word.chars().nth(j) {
-                                        last_equal += 1;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                lcp = lcp[..last_equal].to_string();
-                            }
-
-                            user_input = lcp;
+                            user_input = build_lcp(&names, &user_input);
                             cursor_pos = user_input.len();
 
                             redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
@@ -129,6 +109,34 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
     terminal::disable_raw_mode().unwrap();
 
     user_input
+}
+
+fn build_lcp(names: &Vec<&str>, user_input: &str) -> String {
+    let mut lcp = names.first().unwrap().to_string();
+
+    for i in 1..(names.len() - 1) {
+        let word = names.get(i).unwrap();
+
+        let len = lcp.len().min(word.len());
+
+        if len == user_input.len() {
+            lcp = user_input.to_string();
+            break;
+        }
+
+        let mut last_equal = user_input.len();
+
+        for j in user_input.len()..len {
+            if lcp.chars().nth(j) == word.chars().nth(j) {
+                last_equal += 1;
+            } else {
+                break;
+            }
+        }
+        lcp = lcp[..last_equal].to_string();
+    }
+
+    lcp
 }
 
 fn redraw_line(prompt: &str, input: &str, cursor_pos: usize) {
