@@ -79,7 +79,8 @@ pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                         } else {
                             one_tab_pressed = false;
                             redraw_line(prompt, &format!("{}", user_input), cursor_pos);
-                            let names: Vec<&str> = found_command.iter().map(|s| s.as_str()).collect();
+                            let mut names: Vec<&str> = found_command.iter().map(|s| s.as_str()).collect();
+                            names.sort();
                             println!("\r\n{}\r\n", names.join("  "));
                             redraw_line(prompt, &format!("{}", user_input), cursor_pos);
                         }
