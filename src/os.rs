@@ -21,9 +21,9 @@ impl OSInstance {
 
     pub fn find_executable(&self, name: &str, current_dir: &Path) -> Option<PathBuf> {
         // search current folder
-        if let Some(value) = find_executable_folder(name, current_dir) {
-            return Some(value);
-        }
+        // if let Some(value) = find_executable_folder(name, current_dir) {
+        //     return Some(value);
+        // }
 
         // search path
         if let Some(item) = self.path_commands.get(&OsString::from(name)) {
