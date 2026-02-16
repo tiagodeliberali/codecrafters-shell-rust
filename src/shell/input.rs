@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::{collections::HashSet, io::{self, Write}};
 
 use crossterm::{
     cursor,
@@ -7,7 +7,7 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 
-pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
+pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
     let prompt = "$ ";
     print!("{prompt}");
     io::stdout().flush().unwrap();

@@ -3,7 +3,7 @@ mod parser;
 mod shell;
 mod os;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
 
@@ -29,8 +29,14 @@ fn main() {
     commands.insert("dir", commands::ls);
     commands.insert("type", commands::type_fn);
 
-    let mut know_commands: Vec<String> = commands.keys().map(|i| i.to_string()).collect();
-    know_commands.append(&mut os_instance.get_know_commands());
+    let mut know_commands: HashSet<String> = HashSet::new();
+
+    for c in commands.keys() {
+        know_commands.insert(c.to_string());
+    }
+    for c in os_instance.get_know_commands() {
+        know_commands.insert(c);
+    }
 
     loop {
         let user_input = shell::input::retrieve_user_input(&know_commands);
