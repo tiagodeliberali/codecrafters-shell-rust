@@ -60,27 +60,56 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
                     }
                 }
                 KeyCode::Tab => {
-                    let found_command: Vec<&String> = know_commands
+                    let found_commands: Vec<&String> = know_commands
                         .iter()
                         .filter(|i| i.starts_with(&user_input))
                         .collect();
 
-                    if found_command.is_empty() {
+                    if found_commands.is_empty() {
                         redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
-                    } else if found_command.len() == 1 {
-                        let command_name = found_command.first().unwrap();
+                    } else if found_commands.len() == 1 {
+                        let command_name = found_commands.first().unwrap();
                         user_input = format!("{command_name} ");
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
                     } else {
+                        let mut names: Vec<&str> = found_commands.iter().map(|s| s.as_str()).collect();
+                        names.sort();
+
                         if !one_tab_pressed {
                             one_tab_pressed = true;
+
+                            let mut lcp = names.first().unwrap().to_string();
+
+                            for i in 1..(names.len() - 1) {
+                                let word = names.get(i).unwrap();
+                                
+                                let len = lcp.len().min(word.len());
+
+                                if len == user_input.len() {
+                                    lcp = user_input;
+                                    break;
+                                }
+
+                                let mut last_equal = user_input.len();
+                                
+                                for j in user_input.len()..len {
+                                    if lcp.chars().nth(j) == word.chars().nth(j) {
+                                        last_equal += 1;
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                lcp = lcp[..last_equal].to_string();
+                            }
+
+                            user_input = lcp;
+                            cursor_pos = user_input.len();
+
                             redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
                         } else {
                             one_tab_pressed = false;
                             redraw_line(prompt, &format!("{}", user_input), cursor_pos);
-                            let mut names: Vec<&str> = found_command.iter().map(|s| s.as_str()).collect();
-                            names.sort();
                             print!("\r\n{}\r\n", names.join("  "));
                             redraw_line(prompt, &format!("{}", user_input), cursor_pos);
                         }
