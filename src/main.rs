@@ -128,6 +128,8 @@ fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                         user_input = format!("{command_name} ");
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
+                    } else {
+                        redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos);
                     }
                 }
                 KeyCode::Enter => {
