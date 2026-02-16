@@ -15,6 +15,7 @@ pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
     terminal::enable_raw_mode().unwrap();
     let mut user_input = String::new(); // what the user has typed so far
     let mut cursor_pos: usize = 0; // cursor position in the string
+    let mut one_tab_pressed = false;
 
     loop {
         let event = event::read().unwrap();
@@ -33,6 +34,7 @@ pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                     break;
                 }
                 KeyCode::Char(c) => {
+                    one_tab_pressed = false;
                     user_input.insert(cursor_pos, c);
                     cursor_pos += 1;
                     redraw_line(prompt, &user_input, cursor_pos);
@@ -50,6 +52,7 @@ pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                     redraw_line(prompt, &user_input, cursor_pos);
                 }
                 KeyCode::Backspace => {
+                    one_tab_pressed = false;
                     if cursor_pos > 0 {
                         cursor_pos -= 1;
                         user_input.remove(cursor_pos);
@@ -61,14 +64,25 @@ pub fn retrieve_user_input(know_commands: &Vec<String>) -> String {
                         .iter()
                         .filter(|i| i.starts_with(&user_input))
                         .collect();
-                    let found_command = found_command.first();
 
-                    if let Some(command_name) = found_command {
+                    if found_command.is_empty() {
+                        redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
+                    } else if found_command.len() == 1 {
+                        let command_name = found_command.first().unwrap();
                         user_input = format!("{command_name} ");
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
                     } else {
-                        redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos);
+                        if !one_tab_pressed {
+                            one_tab_pressed = true;
+                            redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
+                        } else {
+                            one_tab_pressed = false;
+                            redraw_line(prompt, &format!("{}", user_input), cursor_pos);
+                            let names: Vec<&str> = found_command.iter().map(|s| s.as_str()).collect();
+                            println!("\r\n{}\r\n", names.join("  "));
+                            redraw_line(prompt, &format!("{}", user_input), cursor_pos);
+                        }
                     }
                 }
                 KeyCode::Enter => {
