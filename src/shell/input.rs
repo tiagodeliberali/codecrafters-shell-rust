@@ -14,6 +14,13 @@ use crossterm::{
 };
 
 pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
+    // Ensure prompt starts on a new line (like zsh's % marker)
+    if let Ok((col, _)) = cursor::position()
+        && col > 0
+    {
+        println!();
+    }
+
     let prompt = "$ ";
     print!("{prompt}");
     io::stdout().flush().unwrap();
