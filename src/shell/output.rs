@@ -57,7 +57,7 @@ pub fn process_output(
     match *output_processor {
         OutputProcessor::Console => {
             if last_piped_command && let Some(msg) = std_output {
-                println!("{msg}");
+                println!("{}", msg.trim_end_matches('\n'));
             }
 
             if let Some(msg) = std_error {
