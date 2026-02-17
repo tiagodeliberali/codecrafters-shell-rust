@@ -44,39 +44,51 @@ fn main() {
 
     loop {
         let user_input = shell::input::retrieve_user_input(&know_commands);
-        let command = user_input.trim();
-        let words = parser::parse_input(command);
+        let command_input: Vec<&str> = user_input.trim().split('|').collect();
+        let last_command_position = &command_input.len() - 1;
+        let mut previous_result: Option<String> = None;
 
-        match output::define_output_processor(&command, &current_dir) {
-            Ok(processor) => output_processor = processor,
-            Err(message) => {
-                println!("{}", message);
-                continue;
-            }
-        };
+        for (position, command) in command_input.into_iter().enumerate() {
+            let words = parser::parse_input(command);
 
-        if let Some(command_name) = words.first() {
-            let action_requested = commands.get(&command_name.as_str());
-
-            let input = CommandInput {
-                command_name: command_name.as_str(),
-                command_arguments: &words[1..],
-                current_dir: &current_dir,
-                os: &os_instance,
+            match output::define_output_processor(command, &current_dir) {
+                Ok(processor) => output_processor = processor,
+                Err(message) => {
+                    println!("{}", message);
+                    continue;
+                }
             };
 
-            let result = if let Some(action) = action_requested {
-                action(input)
-            } else {
-                commands::run_program(input)
-            };
+            if let Some(command_name) = words.first() {
+                let action_requested = commands.get(&command_name.as_str());
 
-            // process results
-            if let Some(path) = result.updated_dir {
-                current_dir = path;
+                let input = CommandInput {
+                    command_name: command_name.as_str(),
+                    command_arguments: &words[1..],
+                    current_dir: &current_dir,
+                    os: &os_instance,
+                    std_input: previous_result,
+                };
+
+                let result = if let Some(action) = action_requested {
+                    action(input)
+                } else {
+                    commands::run_program(input)
+                };
+
+                // process results
+                if let Some(path) = result.updated_dir {
+                    current_dir = path;
+                }
+
+                output::process_output(
+                    &output_processor,
+                    result.std_output.clone(),
+                    result.std_error,
+                    position == last_command_position,
+                );
+                previous_result = result.std_output;
             }
-
-            output::process_output(&output_processor, result.std_output, result.std_error);
         }
     }
 }

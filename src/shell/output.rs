@@ -52,10 +52,11 @@ pub fn process_output(
     output_processor: &OutputProcessor,
     std_output: Option<String>,
     std_error: Option<String>,
+    last_piped_command: bool,
 ) {
     match *output_processor {
         OutputProcessor::Console => {
-            if let Some(msg) = std_output {
+            if last_piped_command && let Some(msg) = std_output {
                 println!("{msg}");
             }
 
