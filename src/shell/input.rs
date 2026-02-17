@@ -5,7 +5,10 @@ use std::{
 
 use crossterm::{
     cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    event::{
+        self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEvent, KeyEventKind,
+        KeyModifiers,
+    },
     execute,
     terminal::{self, ClearType},
 };
@@ -16,12 +19,26 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
     io::stdout().flush().unwrap();
 
     terminal::enable_raw_mode().unwrap();
+    execute!(io::stdout(), EnableBracketedPaste).unwrap();
+
     let mut user_input = String::new(); // what the user has typed so far
     let mut cursor_pos: usize = 0; // cursor position in the string
     let mut one_tab_pressed = false;
 
     loop {
         let event = event::read().unwrap();
+
+        if let Event::Paste(text) = &event {
+            for c in text.chars() {
+                if c == '\n' || c == '\r' {
+                    continue;
+                } // skip newlines in pasted text
+                user_input.insert(cursor_pos, c);
+                cursor_pos += 1;
+            }
+            redraw_line(prompt, &user_input, cursor_pos);
+            continue;
+        }
 
         if let Event::Key(KeyEvent {
             code,
@@ -104,6 +121,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
         }
     }
 
+    execute!(io::stdout(), DisableBracketedPaste).unwrap();
     terminal::disable_raw_mode().unwrap();
 
     user_input
