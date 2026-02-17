@@ -20,7 +20,7 @@ enum OutputProcessor {
 }
 
 fn main() {
-    let mut output_processor;
+    let mut output_processor = OutputProcessor::Console;
     let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
 
     let os_instance = OSInstance::new();
@@ -91,8 +91,9 @@ fn main() {
                     previous_result = result.std_output;
                 } else {
                     let is_last = position == last_command_position;
-                    match commands::run_program(input, &mut previous_stdout, is_last) {
-                        Ok(result) => program_run_children.push(result),
+                    let has_redirect = !matches!(output_processor, OutputProcessor::Console);
+                    match commands::run_program(input, &mut previous_stdout, is_last, has_redirect) {
+                        Ok(result) => program_run_children.push((result, is_last && has_redirect)),
                         Err(error) => print!("{error}"),
                     }
                 };
@@ -100,8 +101,23 @@ fn main() {
         }
 
         // Wait for all children
-        for mut child in program_run_children {
-            child.wait().expect("failed to wait");
+        for (mut child, capture_output) in program_run_children {
+            if capture_output {
+                let result = child.wait_with_output().expect("failed to wait");
+                let std_output = parse_child_output(result.stdout);
+                let std_error = parse_child_output(result.stderr);
+                output::process_output(&output_processor, std_output, std_error, true);
+            } else {
+                child.wait().expect("failed to wait");
+            }
         }
+    }
+}
+
+fn parse_child_output(raw: Vec<u8>) -> Option<String> {
+    match String::from_utf8(raw) {
+        Ok(s) if s.is_empty() => None,
+        Ok(s) => Some(s.trim_end_matches('\n').to_string()),
+        Err(_) => None,
     }
 }

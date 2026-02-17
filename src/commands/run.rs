@@ -9,6 +9,7 @@ pub fn run_program(
     input: CommandInput,
     previous_stdout: &mut Option<ChildStdout>,
     is_last: bool,
+    has_redirect: bool,
 ) -> Result<Child, String> {
     if input
         .os
@@ -19,12 +20,13 @@ pub fn run_program(
     };
 
     let stdin = match previous_stdout.take() {
-        Some(prev_out) => Stdio::from(prev_out), // pipe from previous
-        None => Stdio::inherit(),                // first command
+        Some(prev_out) => Stdio::from(prev_out),    // pipe from previous
+        None => Stdio::inherit(),                               // first command
     };
 
-    let stdout = if is_last { Stdio::inherit() } else { Stdio::piped() };
-    let stderr = if is_last { Stdio::inherit() } else { Stdio::piped() };
+    let inherit_output = is_last && !has_redirect;
+    let stdout = if inherit_output { Stdio::inherit() } else { Stdio::piped() };
+    let stderr = if inherit_output { Stdio::inherit() } else { Stdio::piped() };
 
     let mut child = Command::new(input.command_name)
         .args(input.command_arguments)
