@@ -48,7 +48,7 @@ fn parse_output_std(std_out: Vec<u8>) -> Option<String> {
     match std_out {
         Err(_) => None,
         Ok(value) => {
-            let output = value.trim_end_matches('\n').to_string();
+            let output = value.to_string();
             if output.is_empty() {
                 None
             } else {
