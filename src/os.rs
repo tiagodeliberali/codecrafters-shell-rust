@@ -26,15 +26,16 @@ impl OSInstance {
         }
 
         // search path
-        if let Some(item) = self.path_commands.get(&OsString::from(name)) {
-            Some(item.clone())
-        } else {
-            None
-        }
+        self.path_commands
+            .get(&OsString::from(name))
+            .cloned()
     }
-    
+
     pub(crate) fn get_know_commands(&self) -> Vec<String> {
-        self.path_commands.keys().map(|i| i.display().to_string()).collect()
+        self.path_commands
+            .keys()
+            .map(|i| i.display().to_string())
+            .collect()
     }
 }
 
@@ -54,12 +55,11 @@ fn load_path_commands() -> HashMap<OsString, PathBuf> {
 
                 let file_path = entry_result.path();
 
-                if file_path.is_executable() {
-                    if let Some(name) = file_path.file_name() {
-                        if !commands.contains_key(name) {
-                            commands.insert(name.to_os_string(), file_path);
-                        }
-                    }
+                if file_path.is_executable()
+                    && let Some(name) = file_path.file_name()
+                    && !commands.contains_key(name)
+                {
+                    commands.insert(name.to_os_string(), file_path);
                 }
             }
         }

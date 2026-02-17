@@ -43,9 +43,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
                     redraw_line(prompt, &user_input, cursor_pos);
                 }
                 KeyCode::Left => {
-                    if cursor_pos > 0 {
-                        cursor_pos -= 1;
-                    }
+                    cursor_pos = cursor_pos.saturating_sub(1);
                     redraw_line(prompt, &user_input, cursor_pos);
                 }
                 KeyCode::Right => {
@@ -89,9 +87,9 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
                             redraw_line(prompt, &format!("{}\x07", user_input), cursor_pos); // beep!
                         } else {
                             one_tab_pressed = false;
-                            redraw_line(prompt, &format!("{}", user_input), cursor_pos);
+                            redraw_line(prompt, &user_input.to_string(), cursor_pos);
                             print!("\r\n{}\r\n", names.join("  "));
-                            redraw_line(prompt, &format!("{}", user_input), cursor_pos);
+                            redraw_line(prompt, &user_input.to_string(), cursor_pos);
                         }
                     }
                 }

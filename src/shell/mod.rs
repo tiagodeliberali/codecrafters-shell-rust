@@ -10,6 +10,7 @@ pub struct CommandInput<'a> {
     pub command_arguments: &'a [String],
     pub current_dir: &'a Path,
     pub os: &'a OSInstance,
+    pub std_input: Option<String>,
 }
 
 #[derive(Default)]

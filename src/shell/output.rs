@@ -26,7 +26,7 @@ pub fn define_output_processor(command: &str, current_dir: &Path) -> Result<Outp
             position + 1
         };
 
-        match parser::parse_path(&command[inital_argument_position..].trim(), current_dir) {
+        match parser::parse_path(command[inital_argument_position..].trim(), current_dir) {
             Ok(path) => {
                 if let Some(&byte_value) = position
                     .checked_sub(1)

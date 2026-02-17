@@ -8,7 +8,7 @@ pub fn cd(input: CommandInput) -> CommandOutput {
         return CommandOutput::empty();
     };
 
-    match parser::parse_path(&path, input.current_dir) {
+    match parser::parse_path(path, input.current_dir) {
         Ok(target_dir) => {
             if target_dir.exists() {
                 CommandOutput::path_update(target_dir)
