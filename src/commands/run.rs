@@ -1,29 +1,37 @@
 use std::{
     io::Write,
-    process::{Command, Stdio},
+    process::{Child, ChildStdout, Command, Stdio},
 };
 
-use crate::shell::{CommandInput, CommandOutput};
+use crate::shell::{CommandInput};
 
-pub fn run_program(input: CommandInput) -> CommandOutput {
+pub fn run_program(
+    input: CommandInput,
+    previous_stdout: &mut Option<ChildStdout>,
+    is_last: bool,
+) -> Result<Child, String> {
     if input
         .os
         .find_executable(input.command_name, input.current_dir)
         .is_none()
     {
-        return CommandOutput::failure(format!("{}: not found", input.command_name));
+        return Err(format!("{}: not found", input.command_name));
     };
+
+    let stdin = match previous_stdout.take() {
+        Some(prev_out) => Stdio::from(prev_out), // pipe from previous
+        None => Stdio::inherit(),                // first command
+    };
+
+    let stdout = if is_last { Stdio::inherit() } else { Stdio::piped() };
+    let stderr = if is_last { Stdio::inherit() } else { Stdio::piped() };
 
     let mut child = Command::new(input.command_name)
         .args(input.command_arguments)
         .current_dir(input.current_dir)
-        .stdin(if input.std_input.is_some() {
-            Stdio::piped()
-        } else {
-            Stdio::inherit()
-        })
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdin(stdin)
+        .stdout(stdout)
+        .stderr(stderr)
         .spawn()
         .expect("failed to execute process");
 
@@ -33,27 +41,9 @@ pub fn run_program(input: CommandInput) -> CommandOutput {
         let _ = stdin.write_all(piped_input.as_bytes());
     }
 
-    match child.wait_with_output() {
-        Ok(output) => CommandOutput {
-            std_output: parse_output_std(output.stdout),
-            std_error: parse_output_std(output.stderr),
-            ..Default::default()
-        },
-        Err(error) => CommandOutput::failure(error.to_string()),
+    if !is_last {
+        *previous_stdout = child.stdout.take();
     }
-}
 
-fn parse_output_std(std_out: Vec<u8>) -> Option<String> {
-    let std_out = String::from_utf8(std_out);
-    match std_out {
-        Err(_) => None,
-        Ok(value) => {
-            let output = value.to_string();
-            if output.is_empty() {
-                None
-            } else {
-                Some(output)
-            }
-        }
-    }
+    Ok(child)
 }

@@ -6,6 +6,7 @@ mod shell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
+use std::process::ChildStdout;
 
 use crate::{
     os::OSInstance,
@@ -48,6 +49,9 @@ fn main() {
         let last_command_position = &command_input.len() - 1;
         let mut previous_result: Option<String> = None;
 
+        let mut program_run_children = Vec::new();
+        let mut previous_stdout: Option<ChildStdout> = None;
+
         for (position, command) in command_input.into_iter().enumerate() {
             let words = parser::parse_input(command);
 
@@ -67,28 +71,37 @@ fn main() {
                     command_arguments: &words[1..],
                     current_dir: &current_dir,
                     os: &os_instance,
-                    std_input: previous_result,
+                    std_input: previous_result.clone(),
                 };
 
-                let result = if let Some(action) = action_requested {
-                    action(input)
+                if let Some(action) = action_requested {
+                    let result = action(input);
+
+                    // process results
+                    if let Some(path) = result.updated_dir {
+                        current_dir = path;
+                    }
+
+                    output::process_output(
+                        &output_processor,
+                        result.std_output.clone(),
+                        result.std_error,
+                        position == last_command_position,
+                    );
+                    previous_result = result.std_output;
                 } else {
-                    commands::run_program(input)
+                    let is_last = position == last_command_position;
+                    match commands::run_program(input, &mut previous_stdout, is_last) {
+                        Ok(result) => program_run_children.push(result),
+                        Err(error) => print!("{error}"),
+                    }
                 };
-
-                // process results
-                if let Some(path) = result.updated_dir {
-                    current_dir = path;
-                }
-
-                output::process_output(
-                    &output_processor,
-                    result.std_output.clone(),
-                    result.std_error,
-                    position == last_command_position,
-                );
-                previous_result = result.std_output;
             }
+        }
+
+        // Wait for all children
+        for mut child in program_run_children {
+            child.wait().expect("failed to wait");
         }
     }
 }
