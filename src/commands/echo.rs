@@ -73,5 +73,6 @@ fn interpret_escapes(input: &str) -> String {
         }
     }
 
+    result.push('\n');
     result
 }
