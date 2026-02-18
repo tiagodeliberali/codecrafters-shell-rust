@@ -8,6 +8,8 @@ use std::env;
 use std::path::PathBuf;
 use std::process::ChildStdout;
 
+use crossterm::cursor;
+
 use crate::{
     os::OSInstance,
     shell::{CommandInput, CommandOutput, output},
@@ -92,7 +94,8 @@ fn main() {
                 } else {
                     let is_last = position == last_command_position;
                     let has_redirect = !matches!(output_processor, OutputProcessor::Console);
-                    match commands::run_program(input, &mut previous_stdout, is_last, has_redirect) {
+                    match commands::run_program(input, &mut previous_stdout, is_last, has_redirect)
+                    {
                         Ok(result) => program_run_children.push((result, is_last && has_redirect)),
                         Err(error) => print!("{error}"),
                     }
@@ -107,6 +110,13 @@ fn main() {
                 let std_output = parse_child_output(result.stdout);
                 let std_error = parse_child_output(result.stderr);
                 output::process_output(&output_processor, std_output, std_error, true);
+
+                // Ensure prompt starts on a new line (like zsh's % marker)
+                if let Ok((col, _)) = cursor::position()
+                    && col > 1
+                {
+                    print!("\r\n");
+                }
             } else {
                 child.wait().expect("failed to wait");
             }
