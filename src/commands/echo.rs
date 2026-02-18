@@ -7,7 +7,7 @@ pub fn echo(input: CommandInput) -> CommandOutput {
         let text = args[1..].join(" ");
         CommandOutput::success(interpret_escapes(&text))
     } else {
-        CommandOutput::success(args.join(" "))
+        CommandOutput::success(format!("{}\n", args.join(" ")))
     }
 }
 
