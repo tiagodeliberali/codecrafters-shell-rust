@@ -6,7 +6,7 @@ mod shell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
-use std::process::ChildStdout;
+use std::process::{ChildStdout, exit};
 
 use crossterm::cursor;
 
@@ -97,7 +97,7 @@ fn main() {
                     match commands::run_program(input, &mut previous_stdout, is_last, has_redirect)
                     {
                         Ok(result) => program_run_children.push((result, is_last && has_redirect)),
-                        Err(error) => print!("{error}"),
+                        Err(error) => println!("{error}"),
                     }
                 };
             }
@@ -114,7 +114,7 @@ fn main() {
                 child.wait().expect("failed to wait");
             }
         }
-    }
+    }exit(code)
 }
 
 fn parse_child_output(raw: Vec<u8>) -> Option<String> {
