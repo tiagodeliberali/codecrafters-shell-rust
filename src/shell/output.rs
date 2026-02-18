@@ -90,11 +90,8 @@ fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: 
         {
             Ok(file) => {
                 let content = content.unwrap_or_default();
-                if file.metadata().map(|m| m.len() > 0).unwrap_or(false) {
-                    write!(&file, "\n{}", content)
-                } else {
-                    write!(&file, "{}", content)
-                }
+                let content = if content.ends_with('\n') { content } else { format!("{content}\n") };
+                write!(&file, "{}", content)
             }
             Err(error) => Err(error),
         }
