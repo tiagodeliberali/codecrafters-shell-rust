@@ -82,6 +82,8 @@ pub fn process_output(
 }
 
 fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: bool) {
+    let content = ensure_trailing_newline(content);
+
     let result = if append {
         match OpenOptions::new()
             .create(true)
@@ -89,19 +91,24 @@ fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: 
             .open(output_path)
         {
             Ok(file) => {
-                let content = content.unwrap_or_default();
-                let content = if content.ends_with('\n') { content } else { format!("{content}\n") };
                 write!(&file, "{}", content)
             }
             Err(error) => Err(error),
         }
     } else {
-        let content = content.unwrap_or_default();
-        let content = if content.ends_with('\n') { content } else { format!("{content}\n") };
         fs::write(output_path, content)
     };
 
     if let Err(error) = result {
         println!("Failed to write output file: {error}");
+    }
+}
+
+fn ensure_trailing_newline(content: Option<String>) -> String {
+    match content {
+        None => String::new(),
+        Some(s) if s.is_empty() => s,
+        Some(s) if s.ends_with('\n') => s,
+        Some(s) => format!("{s}\n"),
     }
 }
