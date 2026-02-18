@@ -99,7 +99,9 @@ fn write_output_to_file(output_path: &PathBuf, content: Option<String>, append: 
             Err(error) => Err(error),
         }
     } else {
-        fs::write(output_path, content.unwrap_or_default())
+        let content = content.unwrap_or_default();
+        let content = if content.ends_with('\n') { content } else { format!("{content}\n") };
+        fs::write(output_path, content)
     };
 
     if let Err(error) = result {
