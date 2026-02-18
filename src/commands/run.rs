@@ -20,8 +20,9 @@ pub fn run_program(
     };
 
     let stdin = match previous_stdout.take() {
-        Some(prev_out) => Stdio::from(prev_out),    // pipe from previous
-        None => Stdio::inherit(),                               // first command
+        Some(prev_out) => Stdio::from(prev_out),    // pipe from previous external command
+        None if input.std_input.is_some() => Stdio::piped(), // pipe from previous builtin
+        None => Stdio::inherit(),                    // first command
     };
 
     let inherit_output = is_last && !has_redirect;
