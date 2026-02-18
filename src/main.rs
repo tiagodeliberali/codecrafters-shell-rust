@@ -6,7 +6,7 @@ mod shell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
-use std::process::{ChildStdout, exit};
+use std::process::ChildStdout;
 
 use crossterm::cursor;
 
@@ -114,7 +114,7 @@ fn main() {
                 child.wait().expect("failed to wait");
             }
         }
-    }exit(code)
+    }
 }
 
 fn parse_child_output(raw: Vec<u8>) -> Option<String> {
