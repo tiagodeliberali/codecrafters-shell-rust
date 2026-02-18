@@ -68,12 +68,12 @@ pub fn process_output(
             write_output_to_file(output_path, std_output, append);
 
             if let Some(msg) = std_error {
-                println!("{}", msg);
+                println!("{}", msg.trim_end_matches('\n'));
             }
         }
         OutputProcessor::StderrToFile(ref output_path, append) => {
             if let Some(msg) = std_output {
-                println!("{msg}");
+                println!("{}", msg.trim_end_matches('\n'));
             }
 
             write_output_to_file(output_path, std_error, append);
