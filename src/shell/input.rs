@@ -18,7 +18,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
     if let Ok((col, _)) = cursor::position()
         && col > 1
     {
-        println!();
+        print!("\r\n");
     }
 
     let prompt = "$ ";
