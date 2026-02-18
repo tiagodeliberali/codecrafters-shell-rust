@@ -110,13 +110,6 @@ fn main() {
                 let std_output = parse_child_output(result.stdout);
                 let std_error = parse_child_output(result.stderr);
                 output::process_output(&output_processor, std_output, std_error, true);
-
-                // Ensure prompt starts on a new line (like zsh's % marker)
-                if let Ok((col, _)) = cursor::position()
-                    && col > 1
-                {
-                    print!("\r\n");
-                }
             } else {
                 child.wait().expect("failed to wait");
             }
