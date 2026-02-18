@@ -8,8 +8,6 @@ use std::env;
 use std::path::PathBuf;
 use std::process::ChildStdout;
 
-use crossterm::cursor;
-
 use crate::{
     os::OSInstance,
     shell::{CommandInput, CommandOutput, output},
