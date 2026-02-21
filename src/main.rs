@@ -22,6 +22,7 @@ enum OutputProcessor {
 fn main() {
     let mut output_processor = OutputProcessor::Console;
     let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
+    let mut command_history: Vec<String> = Vec::new();
 
     let os_instance = OSInstance::new();
 
@@ -32,6 +33,7 @@ fn main() {
     commands.insert("cd", commands::cd);
     commands.insert("dir", commands::ls);
     commands.insert("type", commands::type_fn);
+    commands.insert("history", commands::history);
 
     let mut know_commands: HashSet<String> = HashSet::new();
 
@@ -64,6 +66,7 @@ fn main() {
             };
 
             if let Some(command_name) = words.first() {
+                command_history.push(user_input.clone());
                 let action_requested = commands.get(&command_name.as_str());
 
                 let input = CommandInput {
@@ -71,6 +74,8 @@ fn main() {
                     command_arguments: &words[1..],
                     current_dir: &current_dir,
                     os: &os_instance,
+                    command_history: &command_history,
+                    shell_commands: &commands.keys().map(|key| key.to_string()).collect(),
                     std_input: previous_result.clone(),
                 };
 

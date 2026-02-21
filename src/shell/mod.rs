@@ -10,6 +10,8 @@ pub struct CommandInput<'a> {
     pub command_arguments: &'a [String],
     pub current_dir: &'a Path,
     pub os: &'a OSInstance,
+    pub command_history: &'a Vec<String>,
+    pub shell_commands: &'a Vec<String>,
     pub std_input: Option<String>,
 }
 

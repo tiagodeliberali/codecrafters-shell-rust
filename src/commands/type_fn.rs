@@ -5,10 +5,7 @@ pub fn type_fn(input: CommandInput) -> CommandOutput {
         return CommandOutput::failure(": not found".to_string());
     };
 
-    if matches!(
-        name.as_str(),
-        "echo" | "exit" | "type" | "pwd" | "cd" | "dir"
-    ) {
+    if input.shell_commands.contains(name) {
         CommandOutput::success(format!("{name} is a shell builtin"))
     } else {
         match input.os.find_executable(name, input.current_dir) {
