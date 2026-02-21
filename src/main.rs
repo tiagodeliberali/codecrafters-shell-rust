@@ -88,6 +88,12 @@ fn main() {
                         current_dir = path;
                     }
 
+                    if let Some(history) = result.command_history {
+                        for item in history {
+                            command_history.push(item);
+                        }
+                    }
+
                     output::process_output(
                         &output_processor,
                         result.std_output.clone(),

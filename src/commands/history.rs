@@ -1,8 +1,29 @@
-use std::num::ParseIntError;
+use std::{fs, num::ParseIntError};
 
 use crate::shell::{CommandInput, CommandOutput};
 
 pub fn history(input: CommandInput) -> CommandOutput {
+    if let Some(arg) = input.command_arguments.first() && arg == "-r" {
+        let result = fs::read_to_string(input.command_arguments.get(1).unwrap_or(&String::new()));
+
+        match result {
+            Err(error) => {
+                return CommandOutput::failure(format!("Failed to read history file: {}", error.to_string()));
+            }
+            Ok(result) => {
+                let mut paths: Vec<String> = Vec::new();
+
+                for line in result.lines() {
+                    if !line.is_empty() {
+                        paths.push(line.to_string());
+                    }
+                }
+
+                return CommandOutput::history_update(paths);
+            }
+        }
+    }
+
     let size: Option<Result<usize, ParseIntError>> = input.command_arguments.first().map(|s| s.as_str().parse());
 
     let (initial_value, enumeration) = match size {

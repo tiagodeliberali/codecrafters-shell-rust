@@ -18,6 +18,7 @@ pub struct CommandInput<'a> {
 #[derive(Default)]
 pub struct CommandOutput {
     pub updated_dir: Option<PathBuf>,
+    pub command_history: Option<Vec<String>>,
     pub std_output: Option<String>,
     pub std_error: Option<String>,
 }
@@ -44,6 +45,13 @@ impl CommandOutput {
     pub fn path_update(path: PathBuf) -> Self {
         Self {
             updated_dir: Some(path),
+            ..Default::default()
+        }
+    }
+
+    pub fn history_update(history: Vec<String>) -> Self {
+        Self {
+            command_history: Some(history),
             ..Default::default()
         }
     }
