@@ -21,6 +21,12 @@ pub fn load_history() -> Vec<String> {
     }
 }
 
+pub fn save_history(content: &[String]) {
+    if let Some(path) = std::env::var_os("HISTFILE") {
+        _ = write_lines_to_file(path.to_str().unwrap_or_default(), content);
+    }
+}
+
 pub fn history(input: CommandInput) -> CommandOutput {
     if let Some(arg) = input.command_arguments.first()
         && matches!(arg.as_str(), "-r" | "-w" | "-a")
