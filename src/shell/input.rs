@@ -24,7 +24,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Ve
     let mut user_input = String::new(); // what the user has typed so far
     let mut cursor_pos: usize = 0; // cursor position in the string
     let mut one_tab_pressed = false;
-    let mut current_history_position = command_history.len().saturating_sub(1);
+    let mut current_history_position = command_history.len();
 
     loop {
         let event = event::read().unwrap();
@@ -55,15 +55,27 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Ve
                     break;
                 }
                 KeyCode::Up => {
-                    if command_history.len() > 0 {
+                    if command_history.len() > 0 && current_history_position > 0 {
+                        current_history_position -= 1;
+
                         user_input = command_history.get(current_history_position).unwrap().clone();
                         cursor_pos = user_input.len();
                         redraw_line(prompt, &user_input, cursor_pos);
-
-                        if  current_history_position == 0 {
-                            current_history_position = command_history.len().saturating_sub(1);
+                    }
+                }
+                KeyCode::Down => {
+                    if command_history.len() > 0 {
+                        if current_history_position >= command_history.len() - 1 {
+                            current_history_position = command_history.len();
+                            user_input = String::new();
+                            cursor_pos = 0;
+                            redraw_line(prompt, &user_input, cursor_pos);
                         } else {
-                            current_history_position -= 1;
+                            current_history_position += 1;
+
+                            user_input = command_history.get(current_history_position).unwrap().clone();
+                            cursor_pos = user_input.len();
+                            redraw_line(prompt, &user_input, cursor_pos);
                         }
                     }
                 }
