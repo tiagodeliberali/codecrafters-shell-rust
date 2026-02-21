@@ -1,4 +1,5 @@
-use std::{fs, num::ParseIntError};
+use std::{fs::{self, OpenOptions}, num::ParseIntError};
+use std::io::Write;
 
 use crate::shell::{CommandInput, CommandOutput};
 
@@ -28,15 +29,41 @@ pub fn history(input: CommandInput) -> CommandOutput {
                 }
             }
         } else if arg == "-w" {
-            match fs::write(
-                input.command_arguments.get(1).unwrap_or(&String::new()), 
-                format!("{}\n", input.command_history.join("\n"))) {
-                Err(error) => {
-                    return CommandOutput::failure(format!("Failed to write history: {}", error.to_string()));
+            return write_file(&input);
+        } else if arg == "-a" {
+            if let Some(path) = input.command_arguments.get(1) {
+                match fs::exists(path) {
+                    Err(error) => {
+                        return CommandOutput::failure(error.to_string());
+                    }
+                    Ok(exists) => {
+                        if !exists {
+                            return write_file(&input);
+                        } else {
+                            match OpenOptions::new()
+                                .create(true)
+                                .append(true)
+                                .open(path)
+                            {
+                                Ok(file) => {
+                                    match write!(&file, "{}", input.command_history.join("\n")) {
+                                        Err(error) => {
+                                            return CommandOutput::failure(error.to_string());
+                                        }
+                                        Ok(_) => {
+                                            return CommandOutput::empty();
+                                        }
+                                    }
+                                }
+                                Err(error) => {
+                                    return CommandOutput::failure(error.to_string());
+                                }
+                            }
+                        }
+                    }
                 }
-                Ok(_) => {
-                    return CommandOutput::empty();
-                }
+            } else {
+                return CommandOutput::failure("Missing history append path".to_string());
             }
         }
     }
@@ -70,4 +97,21 @@ pub fn history(input: CommandInput) -> CommandOutput {
         output += format!("{} {}\n", (position + initial_value), command).as_str();
     }
     CommandOutput::success(output)
+}
+
+fn write_file(input: &CommandInput<'_>) -> CommandOutput {
+    match fs::write(
+        input.command_arguments.get(1).unwrap_or(&String::new()),
+        format!("{}\n", input.command_history.join("\n")),
+    ) {
+        Err(error) => {
+            return CommandOutput::failure(format!(
+                "Failed to write history: {}",
+                error.to_string()
+            ));
+        }
+        Ok(_) => {
+            return CommandOutput::empty();
+        }
+    }
 }
