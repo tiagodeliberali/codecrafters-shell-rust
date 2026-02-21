@@ -10,6 +10,17 @@ use crate::shell::{CommandInput, CommandOutput};
 
 static LAST_APPENDED_INDEX: AtomicUsize = AtomicUsize::new(0);
 
+pub fn load_history() -> Vec<String> {
+    if let Some(path) = std::env::var_os("HISTFILE") {
+        match read_path_file(path.to_str().unwrap_or_default()) {
+            Ok(result) => return result,
+            Err(_) => Vec::new()
+        }
+    } else {
+        Vec::new()
+    }
+}
+
 pub fn history(input: CommandInput) -> CommandOutput {
     if let Some(arg) = input.command_arguments.first()
         && matches!(arg.as_str(), "-r" | "-w" | "-a")
@@ -68,6 +79,11 @@ pub fn history(input: CommandInput) -> CommandOutput {
 }
 
 fn read_file_to_output(path: &str) -> Result<CommandOutput, Box<dyn Error>> {
+    let paths = read_path_file(path)?;
+    Ok(CommandOutput::history_update(paths))
+}
+
+fn read_path_file(path: &str) -> Result<Vec<String>, Box<dyn Error>> {
     let result = fs::read_to_string(path)?;
 
     let mut paths: Vec<String> = Vec::new();
@@ -78,7 +94,7 @@ fn read_file_to_output(path: &str) -> Result<CommandOutput, Box<dyn Error>> {
         }
     }
 
-    Ok(CommandOutput::history_update(paths))
+    Ok(paths)
 }
 
 fn write_lines_to_file(path: &str, content: &[String]) -> Result<CommandOutput, Box<dyn Error>> {

@@ -15,3 +15,4 @@ pub use pwd::pwd;
 pub use run::run_program;
 pub use type_fn::type_fn;
 pub use history::history;
+pub use history::load_history;

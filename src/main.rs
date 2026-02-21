@@ -22,7 +22,7 @@ enum OutputProcessor {
 fn main() {
     let mut output_processor = OutputProcessor::Console;
     let mut current_dir: PathBuf = env::current_dir().unwrap_or_default();
-    let mut command_history: Vec<String> = Vec::new();
+    let mut command_history: Vec<String> = commands::load_history();
 
     let os_instance = OSInstance::new();
 
