@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 
-pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Vec<String>) -> String {
+pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &[String]) -> String {
     let prompt = "$ ";
     print!("{prompt}");
     io::stdout().flush().unwrap();
@@ -55,7 +55,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Ve
                     break;
                 }
                 KeyCode::Up => {
-                    if command_history.len() > 0 && current_history_position > 0 {
+                    if !command_history.is_empty() && current_history_position > 0 {
                         current_history_position -= 1;
 
                         user_input = command_history.get(current_history_position).unwrap().clone();
@@ -64,7 +64,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Ve
                     }
                 }
                 KeyCode::Down => {
-                    if command_history.len() > 0 {
+                    if !command_history.is_empty() {
                         if current_history_position >= command_history.len() - 1 {
                             current_history_position = command_history.len();
                             user_input = String::new();

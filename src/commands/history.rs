@@ -1,70 +1,38 @@
-use std::{fs::{self, OpenOptions}, num::ParseIntError};
+use std::error::Error;
 use std::io::Write;
+use std::{
+    fs::{self, OpenOptions},
+    num::ParseIntError,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use crate::shell::{CommandInput, CommandOutput};
 
+static LAST_APPENDED_INDEX: AtomicUsize = AtomicUsize::new(0);
+
 pub fn history(input: CommandInput) -> CommandOutput {
-    if let Some(arg) = input.command_arguments.first() {
-        if arg == "-r" {
-            let result =
-                fs::read_to_string(input.command_arguments.get(1).unwrap_or(&String::new()));
+    if let Some(arg) = input.command_arguments.first()
+        && matches!(arg.as_str(), "-r" | "-w" | "-a")
+    {
+        let path = if let Some(value) = input.command_arguments.get(1) {
+            value
+        } else {
+            return CommandOutput::failure("missing path".to_string());
+        };
 
-            match result {
-                Err(error) => {
-                    return CommandOutput::failure(format!(
-                        "Failed to read history file: {}",
-                        error.to_string()
-                    ));
-                }
-                Ok(result) => {
-                    let mut paths: Vec<String> = Vec::new();
-
-                    for line in result.lines() {
-                        if !line.is_empty() {
-                            paths.push(line.to_string());
-                        }
-                    }
-
-                    return CommandOutput::history_update(paths);
-                }
-            }
+        let result = if arg == "-r" {
+            read_file_to_output(path)
         } else if arg == "-w" {
-            return write_file(&input);
+            write_lines_to_file(path, input.command_history)
         } else if arg == "-a" {
-            if let Some(path) = input.command_arguments.get(1) {
-                match fs::exists(path) {
-                    Err(error) => {
-                        return CommandOutput::failure(error.to_string());
-                    }
-                    Ok(exists) => {
-                        if !exists {
-                            return write_file(&input);
-                        } else {
-                            match OpenOptions::new()
-                                .create(true)
-                                .append(true)
-                                .open(path)
-                            {
-                                Ok(file) => {
-                                    match write!(&file, "{}", input.command_history.join("\n")) {
-                                        Err(error) => {
-                                            return CommandOutput::failure(error.to_string());
-                                        }
-                                        Ok(_) => {
-                                            return CommandOutput::empty();
-                                        }
-                                    }
-                                }
-                                Err(error) => {
-                                    return CommandOutput::failure(error.to_string());
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                return CommandOutput::failure("Missing history append path".to_string());
-            }
+            append_content(path, input.command_history)
+        } else {
+            Ok(CommandOutput::empty()) // need to return Err instead of ok. Unexpected situation.
+        };
+
+        match result {
+            Ok(output) => return output,
+            Err(error) => return CommandOutput::failure(error.to_string()),
         }
     }
 
@@ -78,7 +46,7 @@ pub fn history(input: CommandInput) -> CommandOutput {
                 Err(error) => {
                     return CommandOutput::failure(format!(
                         "Failed to parse history argument: {}",
-                        error.to_string()
+                        error
                     ));
                 }
                 Ok(v) => v,
@@ -99,19 +67,38 @@ pub fn history(input: CommandInput) -> CommandOutput {
     CommandOutput::success(output)
 }
 
-fn write_file(input: &CommandInput<'_>) -> CommandOutput {
-    match fs::write(
-        input.command_arguments.get(1).unwrap_or(&String::new()),
-        format!("{}\n", input.command_history.join("\n")),
-    ) {
-        Err(error) => {
-            return CommandOutput::failure(format!(
-                "Failed to write history: {}",
-                error.to_string()
-            ));
+fn read_file_to_output(path: &str) -> Result<CommandOutput, Box<dyn Error>> {
+    let result = fs::read_to_string(path)?;
+
+    let mut paths: Vec<String> = Vec::new();
+
+    for line in result.lines() {
+        if !line.is_empty() {
+            paths.push(line.to_string());
         }
-        Ok(_) => {
-            return CommandOutput::empty();
-        }
+    }
+
+    Ok(CommandOutput::history_update(paths))
+}
+
+fn write_lines_to_file(path: &str, content: &[String]) -> Result<CommandOutput, Box<dyn Error>> {
+    fs::write(path, format!("{}\n", content.join("\n")))?;
+    Ok(CommandOutput::empty())
+}
+
+fn append_content(path: &str, content: &[String]) -> Result<CommandOutput, Box<dyn Error>> {
+    if LAST_APPENDED_INDEX.load(Ordering::Relaxed) >= content.len() {
+        return Ok(CommandOutput::empty());
+    }
+
+    let append_content = &content[LAST_APPENDED_INDEX.load(Ordering::Relaxed)..];
+    LAST_APPENDED_INDEX.store(content.len(), Ordering::Relaxed);
+
+    if !fs::exists(path)? {
+        write_lines_to_file(path, append_content)
+    } else {
+        let file = OpenOptions::new().create(true).append(true).open(path)?;
+        writeln!(&file, "{}", append_content.join("\n"))?;
+        Ok(CommandOutput::empty())
     }
 }
