@@ -1,7 +1,7 @@
 pub mod input;
 pub mod output;
 
-use std::path::{Path, PathBuf};
+use std::{collections::HashSet, path::{Path, PathBuf}};
 
 use crate::os::OSInstance;
 
@@ -11,7 +11,7 @@ pub struct CommandInput<'a> {
     pub current_dir: &'a Path,
     pub os: &'a OSInstance,
     pub command_history: &'a Vec<String>,
-    pub shell_commands: &'a Vec<String>,
+    pub shell_commands: &'a HashSet<String>,
     pub std_input: Option<String>,
 }
 

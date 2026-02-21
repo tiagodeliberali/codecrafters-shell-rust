@@ -40,13 +40,14 @@ fn main() {
     for c in commands.keys() {
         know_commands.insert(c.to_string());
     }
+    let shell_commands = know_commands.clone();
 
     for c in os_instance.get_know_commands() {
         know_commands.insert(c);
     }
 
     loop {
-        let user_input = shell::input::retrieve_user_input(&know_commands);
+        let user_input = shell::input::retrieve_user_input(&know_commands, &command_history);
         let command_input: Vec<&str> = user_input.trim().split('|').collect();
         let last_command_position = &command_input.len() - 1;
         let mut previous_result: Option<String> = None;
@@ -75,7 +76,7 @@ fn main() {
                     current_dir: &current_dir,
                     os: &os_instance,
                     command_history: &command_history,
-                    shell_commands: &commands.keys().map(|key| key.to_string()).collect(),
+                    shell_commands: &shell_commands,
                     std_input: previous_result.clone(),
                 };
 

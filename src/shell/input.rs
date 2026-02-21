@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{self, ClearType},
 };
 
-pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
+pub fn retrieve_user_input(know_commands: &HashSet<String>, command_history: &Vec<String>) -> String {
     let prompt = "$ ";
     print!("{prompt}");
     io::stdout().flush().unwrap();
@@ -24,6 +24,7 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
     let mut user_input = String::new(); // what the user has typed so far
     let mut cursor_pos: usize = 0; // cursor position in the string
     let mut one_tab_pressed = false;
+    let mut current_history_position = command_history.len().saturating_sub(1);
 
     loop {
         let event = event::read().unwrap();
@@ -52,6 +53,19 @@ pub fn retrieve_user_input(know_commands: &HashSet<String>) -> String {
                 KeyCode::Char('j') if modifiers.contains(KeyModifiers::CONTROL) => {
                     print!("\r\n");
                     break;
+                }
+                KeyCode::Up => {
+                    if command_history.len() > 0 {
+                        user_input = command_history.get(current_history_position).unwrap().clone();
+                        cursor_pos = user_input.len();
+                        redraw_line(prompt, &user_input, cursor_pos);
+
+                        if  current_history_position == 0 {
+                            current_history_position = command_history.len().saturating_sub(1);
+                        } else {
+                            current_history_position -= 1;
+                        }
+                    }
                 }
                 KeyCode::Char(c) => {
                     one_tab_pressed = false;
