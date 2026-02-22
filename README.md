@@ -1,35 +1,92 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/6338fb49-e42f-4435-acab-26b32c700582)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Rust Shell (CodeCrafters Challenge)
 
-This is a starting point for Rust solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+This repository contains my implementation of the
+["Build Your Own Shell" challenge on CodeCrafters](https://app.codecrafters.io/courses/shell/overview),
+written in **Rust**.
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+The goal of the challenge is to build a shell that can:
+- read and parse user commands,
+- execute builtin and external programs,
+- support piping and output redirection,
+- maintain command history,
+- and behave like a small POSIX-style interactive shell.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Project Overview
 
-# Passing the first stage
+The shell runs as a REPL loop from `src/main.rs`:
+1. Read input from the terminal.
+2. Parse commands (including quotes/escapes).
+3. Resolve builtins or external executables.
+4. Execute command pipelines.
+5. Process stdout/stderr and optional redirection.
 
-The entry point for your `shell` implementation is in `src/main.rs`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+### Builtins implemented
+
+- `echo` (including `-e` escape interpretation)
+- `cd`
+- `pwd`
+- `exit`
+- `type`
+- `history` (print/read/write/append modes)
+- `dir` (directory listing)
+
+### Shell features
+
+- Interactive prompt with line editing (left/right/backspace)
+- Command history navigation with Up/Down arrows
+- Tab completion for known commands
+- Command parsing with support for:
+   - single quotes `'...'`
+   - double quotes `"..."`
+   - escape sequences with `\`
+- Pipelines with `|`
+- Output redirection:
+   - stdout: `>` and `>>`
+   - stderr: `2>` and `2>>`
+
+## Repository Structure
+
+- `src/main.rs`: main REPL and command dispatch
+- `src/parser.rs`: input and path parsing
+- `src/os.rs`: executable discovery and OS helpers
+- `src/commands/`: builtin commands + external run helper
+- `src/shell/input.rs`: interactive terminal input behavior
+- `src/shell/output.rs`: stdout/stderr processing and file redirection
+
+## Running Locally
+
+### Requirements
+
+- Rust toolchain (Cargo)
+
+### Run the shell
+
+Use the CodeCrafters wrapper script:
 
 ```sh
-git commit -am "pass 1st stage" # any msg
+./your_program.sh
+```
+
+Or run directly with Cargo:
+
+```sh
+cargo run
+```
+
+## Submitting to CodeCrafters
+
+After making changes:
+
+```sh
+git add .
+git commit -m "your message"
 git push origin master
 ```
 
-Time to move on to the next stage!
+CodeCrafters will run the stage tests automatically and stream the output.
 
-# Stage 2 & beyond
+## Notes
 
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `cargo (1.92)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+This project started from the official Rust starter template provided by
+CodeCrafters and was incrementally extended while progressing through the
+challenge stages.
